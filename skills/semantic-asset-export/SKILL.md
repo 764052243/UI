@@ -134,12 +134,12 @@ delivery.zip                   # 完整 delivery/ 内容，非零碎切块包
 ```bash
 # 只检查所有图标：PNG不透明、留白过大、可见主体偏移则返回非零退出码
 python scripts/normalize_ui_icons.py delivery/assets/icons \
-  --report delivery/reports/icon-trim-audit.json
+  --report working/icon-trim-audit.json
 
 # 将图标非破坏性地批量紧裁到独立输出目录，不会改动旧图；默认2px安全边
 python scripts/normalize_ui_icons.py delivery/assets/icons \
-  --output-dir delivery/assets/icons-trimmed --padding 2 \
-  --report delivery/reports/icon-trim-output.json
+  --output-dir working/icons-trimmed --padding 2 \
+  --report working/icon-trim-output.json
 
 # 最终图标放回 assets/icons/ 并由 HTML 真实引用后，重新执行交付完整性检查
 python scripts/verify_ui_delivery.py delivery --zip delivery.zip
