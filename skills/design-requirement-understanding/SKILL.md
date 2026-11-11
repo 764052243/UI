@@ -84,7 +84,7 @@ description: UI设计师项目共享的需求理解与反馈定位门禁；适�
 
 ## 9. 即时模式下的最小需求确认与风险处理
 
-本 SKILL 的职责是**防止误读**，不是在每一轮重复分析。日常明确反馈直接行动，内部最少确认：目标页面/区域、允许变更、冻结项、验收依据。复杂任务和准备交付时按 `docs/INSTANT_DESIGN_QUALITY_GATE.md` 执行 Q0～Q3；新旧档位质量比较及独立视觉用例见 `docs/INSTANT_DESIGN_REGRESSION.md`。
+本 SKILL 的职责是**防止误读**，不是在每一轮重复分析。日常明确反馈直接行动，内部最少确认：目标页面/区域、允许变更、冻结项、验收依据。**多参考图、多页面、多状态、严格还原或连续纠错时，再加载 [复杂设计分层 SKILL](../complex-design-instant/SKILL.md)**，将意图定位结果交给分阶段设计，不重复让用户填需求表。复杂任务和准备交付时按 `docs/INSTANT_DESIGN_QUALITY_GATE.md` 执行 Q0～Q3；新旧档位质量比较及独立视觉用例见 `docs/INSTANT_DESIGN_REGRESSION.md`，复杂回归见 `docs/COMPLEX_DESIGN_REGRESSION.md`。
 
 对容易误读的动词或短句，先用上下文定位：**询问不等于改版；局部投诉不等于允许改色；“重做”必须区分重做哪一页和保留哪些业务限制；“第二张”先核实上传批次**。不能确定的引用仅提一个关键澄清，不能自作主张“优化”。
 
