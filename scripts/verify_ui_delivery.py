@@ -123,6 +123,7 @@ def scan(root, zip_path=None):
 
         html_path, html_file = required_file(doc.get("entry_html"), "entry_html", ".html")
         report["html_found"] = True
+        required_file("README.txt", "README", ".txt")
         css_paths = doc.get("css")
         js_paths = doc.get("js")
         if not isinstance(css_paths, list) or not css_paths:
@@ -135,6 +136,11 @@ def scan(root, zip_path=None):
             for item in group:
                 p, full = required_file(item, name, ext)
                 sources[p] = full.read_text(encoding="utf-8")
+        html_refs = HtmlScan()
+        html_refs.feed(sources[html_path])
+        for source_file in [*css_paths, *js_paths]:
+            if source_file not in html_refs.refs:
+                errors.append("CSS/JS file not referenced from HTML: " + source_file)
         preview_path, preview_file = required_file(doc.get("preview"), "preview", ".png")
         preview_size, _ = read_png(preview_file, "preview")
         if preview_size != (width, height):
