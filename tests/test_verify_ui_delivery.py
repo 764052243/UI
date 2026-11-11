@@ -58,6 +58,7 @@ class SemanticDeliveryTests(unittest.TestCase):
             "required_text": ["业务运营可视化平台", "综合概览"],
             "required_interactions": ["navigation"]
         }
+        (self.root / "README.txt").write_text("Open index.html in a browser.", encoding="utf-8")
         self.write_manifest()
 
     def write_manifest(self):
@@ -74,6 +75,24 @@ class SemanticDeliveryTests(unittest.TestCase):
         self.assertEqual(result["assets_checked"], 2)
         self.assertFalse(result["visual_verified"])
         self.assertFalse(result["interaction_runtime_verified"])
+
+    def test_missing_readme_fails(self):
+        (self.root / "README.txt").unlink()
+        self.assertTrue(any("README missing" in e for e in self.scan()["errors"]))
+
+    def test_css_not_linked_from_html_fails(self):
+        html = self.root / "index.html"
+        html.write_text(html.read_text(encoding="utf-8").replace(
+            '<link rel="stylesheet" href="css/style.css">', ''
+        ), encoding="utf-8")
+        self.assertTrue(any("CSS/JS file not referenced" in e for e in self.scan()["errors"]))
+
+    def test_js_not_linked_from_html_fails(self):
+        html = self.root / "index.html"
+        html.write_text(html.read_text(encoding="utf-8").replace(
+            '<script src="js/app.js"></script>', ''
+        ), encoding="utf-8")
+        self.assertTrue(any("CSS/JS file not referenced" in e for e in self.scan()["errors"]))
 
     def test_missing_html_fails(self):
         (self.root / "index.html").unlink()
@@ -127,7 +146,7 @@ class SemanticDeliveryTests(unittest.TestCase):
                     z.write(p, p.relative_to(self.root).as_posix())
         result = self.scan(archive_path)
         self.assertEqual(result["status"], "PASS", result["errors"])
-        self.assertEqual(result["zip_files"], 7)
+        self.assertEqual(result["zip_files"], 8)
 
     def test_zip_missing_html_fails(self):
         archive_path = Path(self.tmp.name) / "bad.zip"
