@@ -32,3 +32,10 @@
 **当前改进动作**：新增公共语义切图 SKILL、交付清单契约、静态检查器与回归案例，接入共同公约及002/001专业 SKILL。
 
 **真实用户图稿重新切图**：尚未由002执行；图片仅作为问题示意，没有可确认的原始分层设计源文件。不得从本规范改动声称已重做原来的25张图或交付HTML。
+
+## 本次自动化验证证据（2026-11-11）
+
+- 已在本轮运行环境执行 `python -m unittest discover -s /mnt/data/ui000_semantic_validation/tests -p test_verify_ui_delivery.py -v`，**15/15 合成场景单元测试通过**。
+- 检查了完整语义交付包（透明图标、全幅背景、HTML链接的CSS/JS、DOM文本、完整ZIP），以及缺HTML、缺README、CSS/JS没有从HTML实际引用、图标不透明、尺寸不符、资源未引用、整页预览被HTML直接使用、坏PNG、路径穿越、ZIP缺文件等失败情形。
+- 真实运行测试文件与仓库 Git blob 一致：`scripts/verify_ui_delivery.py` 为 `3d297855767bf6d168e5f1e5e887269cf1cfd199`；`tests/test_verify_ui_delivery.py` 为 `60d78adeeddca6e6c9404ff1662dadf478b3ef13`。
+- **尚未验证**：截图中所示的原25张PNG成果是否能准确提取语义图标/背景，用户原始源图的分层是否可获取，用户大屏HTML实际渲染/交互效果。脚本测试不等于002已交付成功。
