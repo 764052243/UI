@@ -101,3 +101,9 @@ python -m unittest discover -s tests -p 'test_verify_visual_reconstruction.py' -
 
 - 图像比对脚本的合成图片单元测试覆盖：完全一致、局部关键ROI失败但全局通过、可容忍的局部变化、全局漂移、画布尺寸不符、ROI越界/重复、配置阈值缺失或无效、损坏PNG；测试结果记录在 PR 中。
 - **尚未进行**002用户原设计源文件与实际HTML截图的差异测量，也没有完成该大屏的真实切图修复和用户验收。这些是 [Issue #8](https://github.com/764052243/UI/issues/8) 的实际交付任务，设计师000只维护规范和工具。
+
+### 自动对比工具真实测试记录（2026-11-11）
+
+- 使用 Python 与 Pillow，在当前运行环境执行 `python -m unittest discover -s /mnt/data/ui000_fidelity/tests -p test_verify_visual_reconstruction.py -v`：**12/12 合成图像测试通过**。覆盖全页一致、关键导航局部失败但总体指标通过、地图小差异、整体偏差、尺寸不符拒绝拉伸、ROI越界/重复、阈值缺失/过宽、错误或缺失基线标识、损坏图片和无效配置。
+- 实际运行脚本与提交到工作分支的 Git blob **逐字节一致**：`scripts/verify_visual_reconstruction.py` SHA=`2708520e3cac32a0db9532b1e59111137c62b1eb`，`tests/test_verify_visual_reconstruction.py` SHA=`bb13c481d49f2d1d89ecce9504ca9c18b48a2f32`。
+- **仅验证了比对脚本的算法行为**，未使用002实际HTML截图同用户认可第二张图进行跨图对比；F4真实视觉验收仍**未通过/待实测**，不据此声称图标、地图或切图已经和原图一致。
