@@ -212,6 +212,14 @@ def scan(root, zip_path=None):
                 report["assets_checked"] += 1
             except ValueError as exc:
                 errors.append(str(exc))
+        # A file sitting in assets/icons is still a deliverable: do not skip
+        # checks by omitting it from the manifest or relabelling it as component.
+        icon_folder = root / "assets" / "icons"
+        actual_icons = ({p.relative_to(root).as_posix() for p in icon_folder.rglob("*.png")}
+                        if icon_folder.is_dir() else set())
+        declared_icons = {path for role, path, _ in declared if role == "icon"}
+        for undeclared in sorted(actual_icons - declared_icons):
+            errors.append("undeclared icon file skipped by manifest: " + undeclared)
         if "icon" not in roles:
             errors.append("no semantic PNG icon declared")
         if "background" not in roles:
