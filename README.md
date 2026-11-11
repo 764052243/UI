@@ -8,7 +8,7 @@
 - [共同设计公约 V2.0](UI_DESIGN_CONVENTION.md)：跨大屏与业务系统的基线、参考图、配色、验收与归档规则。
 - [共用需求理解 SKILL](skills/design-requirement-understanding/SKILL.md)：001/002 都需先定位用户指代、反馈问题、变更维度和验收边界。
 - [复杂设计分层 SKILL（Instant 优先）](skills/complex-design-instant/SKILL.md)：多参考图、多页面、多状态、严格还原、复杂大屏及连续纠错时加载；把复杂任务拆成可验收阶段。
-- [语义切图、PNG资源与HTML交付 SKILL](skills/semantic-asset-export/SKILL.md)：要求切图、透明图标、独立背景、HTML/ZIP时必读；禁止矩形截图冒充素材。[交付契约](docs/SEMANTIC_SLICING_DELIVERY.md)、[SL回归案例](docs/SEMANTIC_SLICING_REGRESSION.md)、[金样视觉一致性与RV回归](docs/ASSET_FIDELITY_REGRESSION.md)、[静态验证器](scripts/verify_ui_delivery.py)、[实际HTML截图差异检测](scripts/verify_visual_reconstruction.py)。
+- [语义切图、PNG资源与HTML交付 SKILL](skills/semantic-asset-export/SKILL.md)：要求切图、透明图标、独立背景、HTML/ZIP时必读；禁止矩形截图冒充素材。[交付契约](docs/SEMANTIC_SLICING_DELIVERY.md)、[SL回归案例](docs/SEMANTIC_SLICING_REGRESSION.md)、[逐图标紧裁/居中标准](docs/ICON_ASSET_ALIGNMENT.md)、[非破坏性图标检查与归一化工具](scripts/normalize_ui_icons.py)、[金样视觉一致性与RV回归](docs/ASSET_FIDELITY_REGRESSION.md)、[静态验证器](scripts/verify_ui_delivery.py)、[实际HTML截图差异检测](scripts/verify_visual_reconstruction.py)。
 - [高清与锁定区域保护 SKILL](skills/visual-fidelity-lock/SKILL.md)：**凡交付设计图或编辑已认可版本都必须执行**，核对真实清晰度、正确画布及无关设计冻结；[回归案例](docs/VISUAL_FIDELITY_REGRESSION.md)与[只读校验脚本](scripts/verify_ui_artifact.py)提供实际检测。
 - [复杂设计分层方法论](docs/COMPLEX_DESIGN_METHOD.md)：ANCHOR→MAP→LAYOUT→VISUAL→VERIFY 的详细操作方式。
 - [复杂设计回归案例](docs/COMPLEX_DESIGN_REGRESSION.md)：12项高风险场景，用真实设计输出检验，而非静态文档自称效果。
@@ -19,6 +19,12 @@
 - [风格参考图目录](assets/style-previews/README.md)：仅存真实且已获授权的样图；暂无图片时不伪造链接。
 - [V3.0 迁移说明](docs/V3.0_MIGRATION.md)：旧约束保留、文件映射与验证事项。
 - [原 V1.0 公约留档](docs/archive/UI_DESIGN_CONVENTION_V1.0.md)：保留全文备查。
+
+## PNG 图标裁边与居中验收
+
+用户反馈导出的 `assets/icons` PNG **仍有冗余空白、主体偏心、大小不统一**时，优先读取 [图标紧裁与居中规范](docs/ICON_ASSET_ALIGNMENT.md)，使用 [不覆盖源图的批量检查/紧裁工具](scripts/normalize_ui_icons.py) 对**实际原PNG**逐个检查和归一化，再运行 [完整切图包验证器](scripts/verify_ui_delivery.py)；最后还要与用户认可视觉金样进行人工逐图标/浏览器对照，不能将“Alpha/像素框合格”说成高保真完成。
+
+切图验证脚本的合成单元测试可运行 `python -m unittest discover -s tests -p "test_*.py" -v`。相关 PR/主分支改动按 [.github/workflows/ui-asset-quality.yml](.github/workflows/ui-asset-quality.yml) 配置自动测试；**只有实际运行并取得结果才能声称 CI 通过**，仓库没有用户真实素材也就不能替001/002验收真实切图。
 
 ## 双模式读取与任务优先级
 

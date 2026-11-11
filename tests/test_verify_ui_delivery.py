@@ -134,6 +134,43 @@ class SemanticDeliveryTests(unittest.TestCase):
         self.write_manifest()
         self.assertEqual(self.scan()["status"], "FAIL")
 
+    def test_icon_with_extra_transparent_space_fails_even_when_centered(self):
+        icon = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+        for y in range(28, 36):
+            for x in range(28, 36):
+                icon.putpixel((x, y), (0, 210, 255, 255))
+        icon.save(self.root / "assets/icons/nav.png")
+        result = self.scan()
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("excessive transparent whitespace" in e for e in result["errors"]))
+        self.assertTrue(result["icon_geometry"]["assets/icons/nav.png"]["centered"])
+
+    def test_icon_visible_shape_offcenter_fails(self):
+        icon = Image.new("RGBA", (12, 12), (0, 0, 0, 0))
+        for y in range(2, 6):
+            for x in range(7, 11):
+                icon.putpixel((x, y), (0, 210, 255, 255))
+        icon.save(self.root / "assets/icons/nav.png")
+        result = self.scan()
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("off-center" in e for e in result["errors"]))
+
+    def test_valid_icon_geometry_is_reported(self):
+        result = self.scan()
+        self.assertEqual(result["status"], "PASS", result["errors"])
+        geometry = result["icon_geometry"]["assets/icons/nav.png"]
+        self.assertEqual(geometry["alpha_bbox"], [2, 2, 6, 6])
+        self.assertTrue(geometry["centered"])
+        self.assertTrue(geometry["tightly_trimmed"])
+
+    def test_extra_icon_missing_from_manifest_fails(self):
+        (self.root / "assets/icons/extra.png").write_bytes(
+            (self.root / "assets/icons/nav.png").read_bytes()
+        )
+        result = self.scan()
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("undeclared icon file" in e for e in result["errors"]))
+
     def test_missing_icon_png_fails(self):
         (self.root / "assets/icons/nav.png").unlink()
         self.assertEqual(self.scan()["status"], "FAIL")
