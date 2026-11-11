@@ -47,6 +47,8 @@ description: UI设计师001/002在交付高清设计图、严格还原、对已�
 
 ## 5. 实用验证脚本与使用示例
 
+**涉及 PNG 图标、背景切图或 HTML 源码时，还必须加载 [语义切图交付 SKILL](../semantic-asset-export/SKILL.md)**；本高清校验器只检查PNG本身，不会核验它是否为**真正独立图标/独立背景**，也不会凭空补出HTML。该类交付同时执行 `scripts/verify_ui_delivery.py` 的语义资产与页面结构检查。
+
 仓库提供可复用的**只读检查器**：`scripts/verify_ui_artifact.py`，需安装 Pillow（`python -m pip install Pillow`）。脚本不修改原图、不写回仓库；检查 PNG 解码、实际宽高、目标画布和（提供源图与允许区域时）**区域外像素差异**，退出码 0=自动检查通过，1=检查失败，2=参数错误。
 
 ```bash

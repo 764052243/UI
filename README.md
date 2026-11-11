@@ -8,6 +8,7 @@
 - [共同设计公约 V2.0](UI_DESIGN_CONVENTION.md)：跨大屏与业务系统的基线、参考图、配色、验收与归档规则。
 - [共用需求理解 SKILL](skills/design-requirement-understanding/SKILL.md)：001/002 都需先定位用户指代、反馈问题、变更维度和验收边界。
 - [复杂设计分层 SKILL（Instant 优先）](skills/complex-design-instant/SKILL.md)：多参考图、多页面、多状态、严格还原、复杂大屏及连续纠错时加载；把复杂任务拆成可验收阶段。
+- [语义切图、PNG资源与HTML交付 SKILL](skills/semantic-asset-export/SKILL.md)：要求切图、透明图标、独立背景、HTML/ZIP时必读；禁止矩形截图冒充素材。[交付契约](docs/SEMANTIC_SLICING_DELIVERY.md)、[SL回归案例](docs/SEMANTIC_SLICING_REGRESSION.md)、[静态验证器](scripts/verify_ui_delivery.py)。
 - [高清与锁定区域保护 SKILL](skills/visual-fidelity-lock/SKILL.md)：**凡交付设计图或编辑已认可版本都必须执行**，核对真实清晰度、正确画布及无关设计冻结；[回归案例](docs/VISUAL_FIDELITY_REGRESSION.md)与[只读校验脚本](scripts/verify_ui_artifact.py)提供实际检测。
 - [复杂设计分层方法论](docs/COMPLEX_DESIGN_METHOD.md)：ANCHOR→MAP→LAYOUT→VISUAL→VERIFY 的详细操作方式。
 - [复杂设计回归案例](docs/COMPLEX_DESIGN_REGRESSION.md)：12项高风险场景，用真实设计输出检验，而非静态文档自称效果。
@@ -21,7 +22,7 @@
 
 ## 双模式读取与任务优先级
 
-先读取共同公约和**共用需求理解 SKILL**，识别用户本轮是询问、反馈、精准修改、严格还原还是自主创作，确定目标区域、允许变更和禁止变更维度；然后再按页面类型加载一个或两个专业 SKILL。简单明确任务在内部快速完成需求定位，不要求用户反复确认；**跨多页/多图、严格还原、复杂业务或数据、连续纠错、视觉+源码混合交付等复杂任务，额外加载复杂设计分层 SKILL**。复杂任务与交付阶段按需读取即时模式质量门禁；**任何设计图交付或已认可稿局部修改还需读取高清与锁定区域保护 SKILL，并对真实最终文件检查清晰度和非目标一致性**。这些机制与专业 SKILL 配合，不需要每轮复述全部规则：
+先读取共同公约和**共用需求理解 SKILL**，识别用户本轮是询问、反馈、精准修改、严格还原还是自主创作，确定目标区域、允许变更和禁止变更维度；然后再按页面类型加载一个或两个专业 SKILL。简单明确任务在内部快速完成需求定位，不要求用户反复确认；**跨多页/多图、严格还原、复杂业务或数据、连续纠错、视觉+源码混合交付等复杂任务，额外加载复杂设计分层 SKILL**。复杂任务与交付阶段按需读取即时模式质量门禁；**任何设计图交付或已认可稿局部修改还需读取高清与锁定区域保护 SKILL，并对真实最终文件检查清晰度和非目标一致性；涉及切图/PNG图标/背景/HTML源码时强制读取语义切图 SKILL，完成背景、图标、DOM和ZIP的分项验收**。这些机制与专业 SKILL 配合，不需要每轮复述全部规则：
 
 | 专业模式 | 范围 | 应加载 |
 | --- | --- | --- |
