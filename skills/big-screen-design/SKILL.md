@@ -6,6 +6,7 @@ description: UI设计师项目中数据大屏、驾驶舱、指挥中心、工�
 # SKILL｜大屏与数据驾驶舱设计
 
 > 共用前置：先读取 [需求理解与反馈定位 SKILL](../design-requirement-understanding/SKILL.md) 与 `UI_DESIGN_CONVENTION.md`，确定本轮用户指向的图表/模块/画布区域、允许变更的维度和必须保留的设计基线；不得把留白、图表密度或比例问题自行翻译为换配色。
+> 复杂任务加挂：多指标多来源、工艺流程与空间关系、多图参考、严格还原、多分辨率及复杂交互的驾驶舱，先按 [复杂设计分层 SKILL](../complex-design-instant/SKILL.md) 分解数据语义、指标权重、构图与视觉验收；不得因 Instant 省略数据和画布核验。
 
 ## 1. 适用范围与触发
 
