@@ -54,3 +54,10 @@ python -m unittest discover -s tests -p "test_verify_ui_artifact.py" -v
 ```
 
 **验收规则**：任何关键项失败都需要针对原问题修复，不得用换配色、重新设计其他区域或改变验收区域绕过失败；用户明确要求重设计才可另立基线，旧认可稿仍作为历史版本保留。
+
+## 四、本次验证证据（2026-11-11）
+
+- 工具：Python 3.13.5 / Pillow 12.3.0；本地从仓库对应内容复制并通过 **Git blob SHA** 核对文件一致性：`scripts/verify_ui_artifact.py` 为 `2ff49d7eb9c20ca5cfc2894c10ef2c38f0ac8c35`，`tests/test_verify_ui_artifact.py` 为 `7f547be2b0f600ac8fe31f9d35d2e4373e5312ed`。
+- 实际执行：`python -m unittest discover -s /mnt/data/ui000_hd_validation/tests -p 'test_verify_ui_artifact.py' -v`，**9/9 用例通过**；包括允许ROI内改动、ROI外改动拒绝、透明度变化拒绝、无改动拒绝、尺寸错误、坏PNG、越界框及错误参数。
+- 另外用合成 1920×1080 PNG 验证一次合法ROI内编辑：检查器输出 `changed_pixels_inside=60000`、`changed_pixels_outside=0`、`preservation_verified=true`、退出码0。该实验只验证**脚本功能**，不等于001/002的实际UI质量或用户认可。
+- **未验证**：尚未拿001/002已认可的真实设计源图执行冻结区比对，也未对其正式PNG完成100%文字/材质审查、不同屏幕实际显示或用户下载验收。对应HF-01～HF-10仍为待开展的真实设计场景测试。
