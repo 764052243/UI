@@ -67,7 +67,7 @@ SU01—SU08 是**系统业务场景/组织方式标签**，不可覆盖共同公
 
 ## 11. 风格参考图与交付
 
-> **切图任务强制加挂** [语义切图、PNG图标与HTML交付 SKILL](../semantic-asset-export/SKILL.md)：图标独立RGBA透明PNG、背景单独可铺设，业务文字/按钮/菜单由HTML DOM呈现；用户要求前端源码时必须交 index.html、CSS、JS 与实际引用资源，验证导航/表单状态，禁止只交矩形区块PNG。
+> **切图任务强制加挂** [语义切图、PNG图标与HTML交付 SKILL](../semantic-asset-export/SKILL.md)：图标独立RGBA透明PNG、背景单独可铺设，业务文字/按钮/菜单由HTML DOM呈现；用户要求前端源码时必须交 index.html、CSS、JS 与实际引用资源，验证导航/表单状态，禁止只交矩形区块PNG。**图标PNG及最终HTML须以用户认可效果图作金样，执行 [F0～F5视觉一致性验收](../../docs/ASSET_FIDELITY_REGRESSION.md)**，逐项核对图标轮廓、材质/发光、组件位置和DOM实际渲染；透明PNG存在或结构检查通过不代表视觉还原通过。
 
 菜单的 F01—F12 独立参考图要求以共同公约为准；系统场景分类 SU01—SU08 仅用来组织专业方案。仓库 assets/style-previews/system-ui/ 没有对应已归档图片时如实说明，优先生成本轮原创示意图供选择（不自动归档），不得编造 URL 或用无关图片代替。交付时每个页面单独 PNG；按要求提供 HTML/CSS/JS、切图和资源；ZIP 只含本次确认成果。核验文件存在、图片解码、资源引用、ZIP 完整性和页面运行状态。用户端下载成功未获验证时必须明确标记。
 
