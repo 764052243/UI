@@ -20,6 +20,12 @@
 - [V3.0 迁移说明](docs/V3.0_MIGRATION.md)：旧约束保留、文件映射与验证事项。
 - [原 V1.0 公约留档](docs/archive/UI_DESIGN_CONVENTION_V1.0.md)：保留全文备查。
 
+## PNG 图标裁边与居中验收
+
+用户反馈导出的 `assets/icons` PNG **仍有冗余空白、主体偏心、大小不统一**时，优先读取 [图标紧裁与居中规范](docs/ICON_ASSET_ALIGNMENT.md)，使用 [不覆盖源图的批量检查/紧裁工具](scripts/normalize_ui_icons.py) 对**实际原PNG**逐个检查和归一化，再运行 [完整切图包验证器](scripts/verify_ui_delivery.py)；最后还要与用户认可视觉金样进行人工逐图标/浏览器对照，不能将“Alpha/像素框合格”说成高保真完成。
+
+切图验证脚本的合成单元测试可运行 `python -m unittest discover -s tests -p "test_*.py" -v`。相关 PR/主分支改动按 [.github/workflows/ui-asset-quality.yml](.github/workflows/ui-asset-quality.yml) 配置自动测试；**只有实际运行并取得结果才能声称 CI 通过**，仓库没有用户真实素材也就不能替001/002验收真实切图。
+
 ## 双模式读取与任务优先级
 
 先读取共同公约和**共用需求理解 SKILL**，识别用户本轮是询问、反馈、精准修改、严格还原还是自主创作，确定目标区域、允许变更和禁止变更维度；然后再按页面类型加载一个或两个专业 SKILL。简单明确任务在内部快速完成需求定位，不要求用户反复确认；**跨多页/多图、严格还原、复杂业务或数据、连续纠错、视觉+源码混合交付等复杂任务，额外加载复杂设计分层 SKILL**。复杂任务与交付阶段按需读取即时模式质量门禁；**任何设计图交付或已认可稿局部修改还需读取高清与锁定区域保护 SKILL，并对真实最终文件检查清晰度和非目标一致性；涉及切图/PNG图标/背景/HTML源码时强制读取语义切图 SKILL，完成背景、图标、DOM和ZIP的分项验收**。这些机制与专业 SKILL 配合，不需要每轮复述全部规则：
