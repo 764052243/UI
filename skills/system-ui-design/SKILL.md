@@ -6,6 +6,7 @@ description: UI设计师项目中登录、门户、导航、工作台、政企Sa
 # SKILL｜业务系统与产品 UI 设计
 
 > 共用前置：先读取 [需求理解与反馈定位 SKILL](../design-requirement-understanding/SKILL.md) 和 `UI_DESIGN_CONVENTION.md`，锁定用户本轮实际指向的页面、区域、问题维度及不允许变更的部分，再执行业务 UI 方法。用户提问、反馈或纠错不是自动换风格/改色授权。
+> 复杂任务加挂：多页面/状态、不同用途参考图、严格还原、导航交互与源码联合交付、连续纠错等情况，先按 [复杂设计分层 SKILL](../complex-design-instant/SKILL.md) 拆出业务关系、页面骨架、视觉和交互验收；仍按本专业 SKILL 落地，不需让用户逐项审批。
 
 ## 1. 适用范围与触发
 
