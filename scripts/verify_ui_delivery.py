@@ -7,6 +7,7 @@ real interactivity, or user download success. Requires Pillow.
 """
 import argparse
 import json
+import math
 import re
 import sys
 import zipfile
@@ -180,6 +181,32 @@ def scan(root, zip_path=None):
                     errors.append("background size mismatch: " + p)
                 if role == "icon" and (alpha is None or alpha[0] >= 255 or alpha[1] <= 0):
                     errors.append("icon lacks transparent/visible pixels: " + p)
+                elif role == "icon":
+                    # Zero-alpha exterior may hide large whitespace or unequal spacing.
+                    # This is a geometry gate, not proof of clean cutout or visual fidelity.
+                    with Image.open(file) as raw:
+                        alpha_box = raw.convert("RGBA").getchannel("A").getbbox()
+                    if alpha_box is None:
+                        errors.append("icon contains no visible alpha content: " + p)
+                    else:
+                        x0, y0, x1, y1 = alpha_box
+                        margins = [x0, y0, size[0] - x1, size[1] - y1]
+                        max_pad = max(2, math.ceil(min(size) * 0.04))
+                        center_skew = max(2, math.ceil(min(size) * 0.02))
+                        centered = (abs(margins[0] - margins[2]) <= center_skew and
+                                    abs(margins[1] - margins[3]) <= center_skew)
+                        tight = max(margins) <= max_pad
+                        report.setdefault("icon_geometry", {})[p] = {
+                            "alpha_bbox": list(alpha_box),
+                            "transparent_margins_ltrb": margins,
+                            "max_pad_px": max_pad,
+                            "centered": centered,
+                            "tightly_trimmed": tight
+                        }
+                        if not tight:
+                            errors.append("icon has excessive transparent whitespace: " + p)
+                        if not centered:
+                            errors.append("icon visible bounds are off-center: " + p)
                 asset_paths.add(p)
                 declared.append((role, p, list(size)))
                 report["assets_checked"] += 1
