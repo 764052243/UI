@@ -163,6 +163,14 @@ class SemanticDeliveryTests(unittest.TestCase):
         self.assertTrue(geometry["centered"])
         self.assertTrue(geometry["tightly_trimmed"])
 
+    def test_extra_icon_missing_from_manifest_fails(self):
+        (self.root / "assets/icons/extra.png").write_bytes(
+            (self.root / "assets/icons/nav.png").read_bytes()
+        )
+        result = self.scan()
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("undeclared icon file" in e for e in result["errors"]))
+
     def test_missing_icon_png_fails(self):
         (self.root / "assets/icons/nav.png").unlink()
         self.assertEqual(self.scan()["status"], "FAIL")
