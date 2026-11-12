@@ -23,22 +23,20 @@
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "canvas": {"width": 1920, "height": 1080},
+  "background_strategy": "css",
   "entry_html": "index.html",
   "css": ["css/style.css"],
   "js": ["js/app.js"],
   "preview": "preview/full-page.png",
   "assets": [
     {
-      "id": "main-background",
-      "role": "background",
-      "path": "assets/backgrounds/bg_dashboard.png"
-    },
-    {
       "id": "overview-nav-icon",
       "role": "icon",
-      "path": "assets/icons/icon_nav_overview.png"
+      "path": "assets/icons/icon_nav_overview.png",
+      "source_kind": "layer_export",
+      "reason_png": "independent glowing navigation symbol"
     }
   ],
   "required_text": ["业务运营可视化平台", "综合概览"],
@@ -52,6 +50,16 @@
 - `required_interactions`：用户明确要求的菜单、切换、折叠、筛选等可操作状态名称。静态检测只能查源码存在，不验证事件行为；不能仅凭测试脚本通过说交互通过。
 - 页面应按实际素材和业务字段调整；交付者不得通过删掉 required_text、required_interactions 或把图标改 role 为 component 绕开未完成的项目。
 
+### 1.1 资源角色与背景策略（新交付强制）
+
+- `background_strategy: "css"`：CSS实际绘制简单底色/渐变，不需要任何背景 PNG；若偷偷保留冗余PNG，资源目录检查会失败。
+- `background_strategy: "image"`：只有不可替代图像背景或用户明确要求背景PNG时使用；此时必须交全画布、无透明洞的真正背景PNG。需要PNG但纯色背景的情况，应在`required_asset_roles`中记录用户明确的背景要求。
+- `source_kind`：每张PNG记录`layer_export / masked / reconstructed`；背景若仅从合成截图蒙版抠取不能直接签收；仍需源层或高保真重建与人工核对。
+- `reason_png`：每张PNG需要具体说明为什么不能稳定用DOM/CSS复现；不能按素材数量交差。复杂组件还需`edge_policy: "closed"`或有金样依据的`"intentional_bleed"`。
+- 需要交PNG背景的用户明确要求应写进`required_asset_roles: ["background"]`，不得因为CSS方案方便而遗漏。
+- 优先阅读[资产裁切角色与边缘质量](ASSET_ROLE_AND_EDGE_QA.md)，对可复用3D底托去重，检查中央地图与底座是否完整；文件名含`masked`不代表遮罩已经正确。
+- 旧 `schema_version:"1.0"` 保持兼容，**不能当作新交付不做资产必要性/边缘检查的借口**。
+
 ## 三、可复用的静态校验
 
 脚本：`scripts/verify_ui_delivery.py`，依赖 Pillow；以单个交付目录为输入，**只读**检查：
@@ -60,6 +68,7 @@
 python -m pip install Pillow
 python scripts/verify_ui_delivery.py delivery/
 python scripts/verify_ui_delivery.py delivery/ --zip delivery.zip
+python scripts/audit_asset_edges.py delivery/asset-manifest.json --root delivery --contact-sheet working/edge-review.png
 python -m unittest discover -s tests -p "test_verify_ui_delivery.py" -v
 ```
 
