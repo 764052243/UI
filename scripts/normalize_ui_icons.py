@@ -9,7 +9,7 @@ import json
 import math
 import sys
 from pathlib import Path
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageDraw, UnidentifiedImageError
 
 
 def read_icon(path):
@@ -157,17 +157,81 @@ def run(source, output_dir=None, padding=2):
             'manual_visual_review_required': True}
 
 
+def render_review_sheet(source, output_path, use_normalized=False, normalized_dir=None):
+    """Create a contact sheet for visual QA; never repairs icon content.
+
+    Three identical PNG previews on checkerboard/light/dark show black/white
+    matte, alpha fringing and visual imbalance that file metadata misses.
+    """
+    root = normalized_dir if use_normalized else source
+    if root is None:
+        raise ValueError('normalized directory not available')
+    files = [root] if root.is_file() else sorted(root.rglob('*.png'))
+    if not files:
+        raise ValueError('no icons to preview')
+    if output_path.resolve() in [p.resolve() for p in files]:
+        raise ValueError('contact sheet cannot overwrite an input icon')
+    width, row_h = 540, 160
+    sheet = Image.new('RGB', (width, 30 + len(files) * row_h), (239, 243, 246))
+    draw = ImageDraw.Draw(sheet)
+    draw.text((12, 10), 'ICON REVIEW - checker / light / dark (not final QA)', fill=(20, 35, 45))
+    for i, path in enumerate(files):
+        ybase = 30 + i * row_h
+        draw.text((12, ybase + 4), path.name.encode('ascii', 'replace').decode('ascii')[:65], fill=(25, 33, 42))
+        try:
+            original = read_icon(path)
+            status = analyze(original)
+            flags = []
+            if status['suspected_baked_background']['suspected']:
+                flags.append('RECTANGULAR MATTE')
+            if not status['tightly_trimmed']:
+                flags.append('EXTRA MARGIN')
+            if not status['geometrically_centered']:
+                flags.append('OFF-CENTER')
+            if not flags:
+                flags.append('GEOMETRY PASS / VERIFY GOLDEN MASTER')
+            draw.text((12, ybase + 22), ', '.join(flags), fill=(170, 40, 20) if not status['pass'] else (30, 90, 70))
+            icon = original.copy()
+            icon.thumbnail((112, 96), Image.Resampling.LANCZOS)
+            for index, kind in enumerate(('checker', 'light', 'dark')):
+                left, top = 12 + index * 176, ybase + 47
+                tile = Image.new('RGBA', (160, 102), (255, 255, 255, 255))
+                if kind == 'checker':
+                    td = ImageDraw.Draw(tile)
+                    for yy in range(0, 102, 12):
+                        for xx in range(0, 160, 12):
+                            td.rectangle((xx, yy, xx + 11, yy + 11),
+                                         fill=(200, 200, 200, 255) if ((xx // 12 + yy // 12) % 2) else (245, 245, 245, 255))
+                elif kind == 'dark':
+                    tile.paste((6, 20, 31, 255), (0, 0, 160, 102))
+                tile.alpha_composite(icon, ((160 - icon.width) // 2, (102 - icon.height) // 2))
+                sheet.paste(tile.convert('RGB'), (left, top))
+                draw.rectangle((left, top, left + 159, top + 101), outline=(146, 151, 155))
+        except ValueError as exc:
+            draw.text((12, ybase + 50), 'INVALID ICON: ' + str(exc)[:55], fill=(180, 20, 20))
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    sheet.save(output_path, format='PNG')
+    return str(output_path)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source', type=Path)
     parser.add_argument('--output-dir', type=Path, help='write separate trimmed files, never overwrite source')
     parser.add_argument('--padding', type=int, default=2, help='safe halo margin after alpha cropping (default 2 px)')
     parser.add_argument('--report', type=Path, help='optional JSON report path')
+    parser.add_argument('--contact-sheet', type=Path, help='visual review PNG on checkerboard, light and dark')
     args = parser.parse_args(argv)
     try:
         if not 0 <= args.padding <= 64:
             parser.error('--padding must be in 0..64')
         result = run(args.source, args.output_dir, args.padding)
+        if args.contact_sheet:
+            result['contact_sheet'] = render_review_sheet(
+                args.source, args.contact_sheet,
+                use_normalized=args.output_dir is not None,
+                normalized_dir=args.output_dir
+            )
         code = 0 if result['status'] == 'PASS' else 1
     except ValueError as exc:
         result, code = {'status': 'FAIL', 'error': str(exc), 'manual_visual_review_required': True}, 2
