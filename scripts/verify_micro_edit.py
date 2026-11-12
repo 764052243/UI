@@ -63,6 +63,27 @@ def check(before, after, plan):
     if not isinstance(protected, list):
         raise ValueError("protected_regions must be a list")
     protected = [rectangle(b, before.size, "protected region") for b in protected]
+    must_change = plan.get("required_changed_regions", [])
+    if not isinstance(must_change, list):
+        raise ValueError("required_changed_regions must be a list")
+    required = []
+    known_ids = set()
+    for item in must_change:
+        if not isinstance(item, dict):
+            raise ValueError("required changed region must be an object")
+        uid = item.get("id")
+        if not isinstance(uid, str) or not uid.strip() or uid in known_ids:
+            raise ValueError("required changed region needs unique nonempty id")
+        known_ids.add(uid)
+        box = rectangle(item.get("rect"), before.size, "required changed region")
+        minimum = item.get("min_changed_pixels", 1)
+        if type(minimum) is not int or minimum <= 0:
+            raise ValueError("required changed region min_changed_pixels must be positive integer")
+        for y in range(box[1], box[3]):
+            for x in range(box[0], box[2]):
+                if not inside(x, y, allowed) or inside(x, y, protected):
+                    raise ValueError("required changed region cannot exceed allowed or overlap protected areas")
+        required.append({"id": uid, "box": box, "minimum": minimum, "actual": 0})
     direction = plan.get("color_direction", "any")
     if direction not in ("any", "darken", "brighten"):
         raise ValueError("color_direction must be any/darken/brighten")
@@ -118,6 +139,9 @@ def check(before, after, plan):
                 out_r, out_b = max(out_r, x + 1), max(out_b, y + 1)
                 continue
             on_target += 1
+            for item in required:
+                if inside(x, y, [item["box"]]):
+                    item["actual"] += 1
             p, q = a[x, y], b[x, y]
             delta = luminance(q) - luminance(p)
             target_lum_delta += delta
@@ -139,6 +163,16 @@ def check(before, after, plan):
         errors.append("target changed in wrong luminance direction or remained too close to original")
     if too_large_changes:
         errors.append("individual RGBA change exceeds authorized maximum")
+    for item in required:
+        if item["actual"] < item["minimum"]:
+            errors.append(item["id"] + ": required target subregion has insufficient changed pixels")
+    required_report = [
+        {"id": item["id"], "rect": [item["box"][0], item["box"][1],
+                                   item["box"][2]-item["box"][0], item["box"][3]-item["box"][1]],
+         "required_changed_pixels": item["minimum"], "actual_changed_pixels": item["actual"],
+         "pass": item["actual"] >= item["minimum"]}
+        for item in required
+    ]
     return {
         "status": "FAIL" if errors else "PASS",
         "baseline_reference_id": reference, "target_id": target,
@@ -146,6 +180,7 @@ def check(before, after, plan):
         "changed_pixels": total, "target_changed_pixels": on_target,
         "changed_pixels_outside_target": outside,
         "changed_pixels_in_protected_regions": protected_changes,
+        "required_changed_regions": required_report,
         "changed_outside_bbox": outside_bbox,
         "wrong_direction_pixels": wrong_direction,
         "too_large_delta_pixels": too_large_changes,
@@ -153,12 +188,16 @@ def check(before, after, plan):
         "errors": errors, "preservation_verified": outside == 0,
         "target_effect_verified": on_target >= min_changed and
                                   (max_changed is None or on_target <= max_changed) and
-                                  wrong_direction == 0 and too_large_changes == 0,
+                                  wrong_direction == 0 and too_large_changes == 0 and
+                                  all(item["actual"] >= item["minimum"] for item in required),
         "manual_visual_review_required": True,
         "notes": [
             "This verifies only image pixel effects; CSS/source edits and true user reference identity require separate evidence.",
             "For screenshot comparison, viewport, fonts, content and dynamic state must be identical; do not loosen tolerance after failure.",
-            "The target ROI must be set BEFORE comparing. It cannot be expanded to excuse unauthorized changes."
+            "The target ROI must be set BEFORE comparing. It cannot be expanded to excuse unauthorized changes.",
+            "For moved underlines, use two small required_changed_regions (old position and new position),"
+            " color_direction=any, and separately inspect actual line-to-text gap and color."
+
         ]
     }
 
