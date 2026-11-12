@@ -7,7 +7,7 @@
 - [项目提示词 V3.0](PROJECT_INSTRUCTIONS_V3.0.md)：精简的任务调度入口；只有用户在 ChatGPT 项目设置实际保存后才成为项目指令。
 - [共同设计公约 V2.0](UI_DESIGN_CONVENTION.md)：跨大屏与业务系统的基线、参考图、配色、验收与归档规则。
 - [严格1:1原图还原与资产证据 SKILL](skills/strict-one-to-one-fidelity/SKILL.md)：对“图标/立体底托仍与原图严重失真”等反馈，优先回真正原始PNG/源图层、锁定7处关键ROI并逐件对照，不得拿含看图器窗口或箭头的比较截图当原生金样；[零容差ROI检查器](scripts/audit_strict_1to1.py)、[PP-01～PP-14回归](docs/STRICT_1TO1_FIDELITY_REGRESSION.md)。**高清/重建/相似不等于1:1通过，静态整图像素一致也不等于HTML语义交付**。
-- [局部精准修改与防需求倒退 SKILL](skills/precise-local-edit/SKILL.md)：登录页/大屏/系统只有一条下划线、某个颜色或图标要调整时，执行“原认可基线＋只允许改A＋冻结其它全部＋目标确实改变且方向正确”的S0～S6门禁；[PNG微变更与冻结区检查器](scripts/verify_micro_edit.py)拒绝无改动、错方向及全图乱改；001登录页CONNECT下划线同时要求**位置更贴近文字下缘＋颜色与较暗原图一致**时，两项必须累积验收，并要求旧线消失、新线出现，不得错误冻结线条坐标。
+- [局部精准修改与防需求倒退 SKILL](skills/precise-local-edit/SKILL.md)：跨001/002通用PLE0～PLE6最小变更契约；累计保留所有未通过属性，精准限定授权范围，验证目标确实改变及非目标冻结；[PNG微变更检查器](scripts/verify_micro_edit.py)支持旧/新位置变化、错误方向和越界修改检查。**具体页面/图标返工在对应设计师任务记录中处理，不写入公共SKILL。**
 - [共用需求理解 SKILL](skills/design-requirement-understanding/SKILL.md)：001/002 都需先定位用户指代、反馈问题、变更维度和验收边界。
 - [复杂设计分层 SKILL（Instant 优先）](skills/complex-design-instant/SKILL.md)：多参考图、多页面、多状态、严格还原、复杂大屏及连续纠错时加载；把复杂任务拆成可验收阶段。
 - [图标原图色彩、脏黑描边和HTML可见主体居中专项](docs/COLOR_FIDELITY_HTML_ALIGNMENT.md)：新增CF0～CF7和CR-01～CR-12；[颜色与DOM视觉中心检查器](scripts/audit_color_layout.py)、[真实浏览器PNG Alpha与slot几何采集脚本](scripts/capture_ui_alignment.js)，防止“PNG很高清但色彩发灰/破败、CSS框居中但图形偏心”。
@@ -31,6 +31,13 @@
 用户反馈导出的 `assets/icons` PNG **仍有冗余空白、主体偏心、大小不统一或黑色底块残留**时，优先读取 [图标紧裁、背景分离与居中规范](docs/ICON_ASSET_ALIGNMENT.md)，使用 [不覆盖源图的批量检查/紧裁工具](scripts/normalize_ui_icons.py) 对**实际原PNG**逐个检查和归一化，再运行 [完整切图包验证器](scripts/verify_ui_delivery.py)；最后还要与用户认可视觉金样进行人工逐图标/浏览器对照，不能将“Alpha/像素框合格”说成高保真完成。
 
 切图验证脚本的合成单元测试可运行 `python -m unittest discover -s tests -p "test_*.py" -v`。相关 PR/主分支改动按 [.github/workflows/ui-asset-quality.yml](.github/workflows/ui-asset-quality.yml) 配置自动测试；**只有实际运行并取得结果才能声称 CI 通过**，仓库没有用户真实素材也就不能替001/002验收真实切图。
+
+## 000 / 001 / 002 职责边界
+
+- **000（公共规范维护）**：只负责总结跨任务共性根因，维护README、共同设计公约、通用/专业SKILL、项目提示词归档、通用测试工具和质量门禁；对规则最小修改、运行可复核测试、在授权范围内集成。**不因每次个别画面反馈持续给公共SKILL增加品牌名、像素坐标、色值或单张设计的补丁条款。**
+- **001（系统UI执行）**：负责具体登录、门户、后台等系统页的真实图稿/源码修改、浏览器验证、交付和用户验收；具体缺陷继续留在其任务Issue或设计记录中。
+- **002（大屏UI执行）**：负责具体大屏图稿、PNG/HTML切图与复现、原图对照、实际运行及用户验收；具体缺陷继续留在其任务Issue或设计记录中。
+- 000发现反复失败时优先判断是否存在**跨场景可复用的机制缺陷**；若只是某页未执行、任务没有读取、或源文件缺失，应投递/更新原Issue，**不新建同义SKILL，不用改规则替代设计师真实返工**。Issue通知不自动唤醒任何设计师。
 
 ## 双模式读取与任务优先级
 

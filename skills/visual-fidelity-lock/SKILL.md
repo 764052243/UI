@@ -63,7 +63,7 @@ python scripts/verify_ui_artifact.py --image revised.png --before accepted.png -
 
 脚本无源图时明确报告 `preservation_verified=false`，不能当作冻结验收。图像源尺寸不同、未提供合法允许修改框、框外变动、应修改却无变化、PNG无法解码、尺寸不符均拒绝通过。**脚本通过不代表设计审美、文字识别、业务、交互或实际用户下载通过**；仍必须人工核对。
 
-**局部仅改一项时的新增验收**：不能只检查“非目标区域没有改动”，还必须检查**用户点名目标确实改了，且按要求方向改变**（如CONNECT下线变暗，而非变亮）。使用 [精准局部修改 SKILL](../precise-local-edit/SKILL.md) 的S0～S6和 [微变更方向/冻结检查器](../../scripts/verify_micro_edit.py)；HTML须核对最小CSS选择器/源码diff＋同视口浏览器截图。无改动、整页换色、基于错误版再改任何一项失败都不许宣布通过。
+**局部精准修改的双向验收**：不仅核对非目标区域未改变，还需验证**目标的全部已授权属性确实达到用户要求**（例如移动量、颜色方向、尺寸或材质）。执行[精准局部修改SKILL](../precise-local-edit/SKILL.md)的PLE0～PLE6，借助[微变更与冻结检查器](../../scripts/verify_micro_edit.py)校验PNG目标变化和受保护区域；HTML补最小CSS diff及实际浏览器同视口截图。无改动、漏掉未通过项、越权改色或持续在错误版上重做均判失败。
 
 ## 6. 交付前两项红线问题
 

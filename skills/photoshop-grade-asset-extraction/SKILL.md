@@ -48,23 +48,15 @@ Adobe官方可核验的操作说明：
 - [智能对象保留源质量](https://helpx.adobe.com/photoshop/desktop/create-manage-layers/smart-objects/smart-objects-overview-and-benefits.html)
 - [Export As可导出多个尺寸](https://helpx.adobe.com/photoshop/desktop/save-and-export/export-files-to-different-formats/fine-tune-your-export-settings-using-the-export-as-option.html)
 
-## C. 用实际PNG测量解释“为何仍是一半”
+## C. 实际PNG层级与可见性诊断
 
-本轮用户上传 `deco_business_plinth_shared.png`，已对**真实文件**进行Pillow读取：
+适用于**任何**仅有底托、符号、外光层或阴影层的切图。获取真实原PNG后记录画布尺寸、RGBA模式、非零Alpha包围框、四侧留白、可见主体视觉中心与导出锚点。不能仅根据一侧透明空间较大就认定“未居中”：可能是有意保留的复合层锚点；也不能将只有底托的单层PNG当成含前景符号的完整视觉单元。
 
-| 检查项 | 实测 |
-| --- | --- |
-| PNG尺寸 / 像素模式 | **132×102，RGBA** |
-| 非零Alpha主体包围框 | **(2,29)～(130,100)**，有效像素范围 **128×71** |
-| 外围留白（左/上/右/下） | **2 / 29 / 2 / 2 px** |
-| 外围透明像素占比 | **约51.6%** |
-| 可见包围框相对画布中心Y偏差 | **13.5px** |
-
-**这说明**：它是一张小尺寸、内容明显偏下的**独立底托层**，而不是用户大屏中可直接独立展示的完整「底托＋业务符号」单元。顶部29像素的透明空白可能是为叠加上方图标留下的锚点，**不能仅凭留白认定抠图错**；但若按“单件完整图标”交付显然缺上层。仅看这张PNG无法证明某条黑边究竟属于有效3D阴影还是残留背景，无法由132×102像素逆推出清晰4K细节，必须核对源工程与金样。
+实际像素不足时，无法从低清裁片凭空恢复独立高频细节；应优先从原始分层/可编辑矢量/程序化几何源重新导出。深色像素可能是合法的实体侧壁或非法混入的背景，必须依据认可原图和三底色检查区分。真实历史PNG尺寸及实测记录留在对应任务Issue/验收报告，**不写进公共SKILL**。
 
 ## D. 可执行的分辨率/完整单元验收
 
-**本轮补充光晕与黑边标准**：独立业务符号可紧裁，但**3D底托、投影、外发光层不得按普通icon自动裁边/再居中**，必须保留原图锚点并用可编辑几何源重新输出；只有真实视觉单元重组后与认可原图逐ROI复合验证、并在白/暗/棋盘底人工检查预乘Alpha与黑边才算通过。详见[HG0～HG6](../../docs/VISUAL_UNIT_GLOW_REGRESSION.md)。
+**光晕与黑边通用标准**：独立业务符号可紧裁，但**3D底托、投影、外发光层不得按普通icon自动裁边/再居中**，必须保留原图锚点并用可编辑几何源重新输出；只有真实视觉单元重组后与认可原图逐ROI复合验证、并在白/暗/棋盘底人工检查预乘Alpha与黑边才算通过。详见[HG0～HG6](../../docs/VISUAL_UNIT_GLOW_REGRESSION.md)。
 
 对应辅助检查器：`scripts/audit_cutout_source_quality.py`，实际回归证据见[PS切图与完整视觉单元回归](../../docs/PS_CUTOUT_REGRESSION.md)。
 

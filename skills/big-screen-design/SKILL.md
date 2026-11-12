@@ -61,11 +61,11 @@ description: UI设计师项目中数据大屏、驾驶舱、指挥中心、工�
 
 ## 10. 参考图与交付
 
-**用户再次提出1:1复现严重失败（优先级最高）**：002必须先加载[严格1:1金样与7处关键ROI门禁](../strict-one-to-one-fidelity/SKILL.md)，使用[严格逐像素ROI检查器](../../scripts/audit_strict_1to1.py)与用户认可原生大屏逐件比较：运行态势雷电图标、顶部总业务量橙色叠层，以及底部生产/物流/仓储/供应链/客户服务完整业务图形。现有带看图王叠窗和红箭头的1484×836比较截图不能作为真正1672×941原图。未达到原样不能仅靠通用SVG重绘和“更高清”宣布完成；有PSD/原生资源则先提取，缺原层可重建但诚实标不确定。实际HTML与独立PNG各自验收，所有关键ROI不一致就未通过。
+**严格1:1复现通用门禁**：用户明确要求1:1或反馈局部严重失真时，加载[原图身份与逐关键ROI门禁](../strict-one-to-one-fidelity/SKILL.md)，使用[严格差异检查器](../../scripts/audit_strict_1to1.py)。从用户认可的原生完整图取得所有实际指向的ROI（不预设数量或组件类别），比较形体、色彩、立体厚度、光影与真实HTML同位效果；带查看器窗口、箭头或缩放的拼图不能充当原生金样。无源层可保真重建，但不得将更高清的近似图宣称严格像素1:1。
 
-**色彩/材质/HTML居中最新未通过项**：002用户本轮指出，SVG图标虽更清晰，但与第三张认可原图相比仍有青蓝/橙色失真、灰旧和脏黑边，第四张HTML目标图形相对视觉槽不居中。先加载[CF0～CF7颜色与DOM可见中心专项](../../docs/COLOR_FIDELITY_HTML_ALIGNMENT.md)，逐个KPI/状态图标和底部业务单元固定金样ROI与真实槽位，执行[sRGB前景差异＋实际DOM槽位核验](../../scripts/audit_color_layout.py)及[浏览器Alpha几何采集](../../scripts/capture_ui_alignment.js)；禁止用通用主题色/过度锐化代替原版材质，也不能以flex框居中替代可见像素居中。
+**色彩/材质/HTML视觉居中通用门禁**：当图标色阶、材质或HTML对齐与认可金样不符时，执行[CF0～CF7颜色与DOM可见中心专项](../../docs/COLOR_FIDELITY_HTML_ALIGNMENT.md)、[原图ROI颜色与布局检查](../../scripts/audit_color_layout.py)及[浏览器Alpha几何采集](../../scripts/capture_ui_alignment.js)。各目标组件按真实金样颜色和独立视觉槽逐一验证，不得用统一主题色、加锐化或仅CSS盒子居中替代视觉保真。
 
-**底部业务五个立体单元专项（最新未通过项）**：用户明确以最后一张大屏原图为唯一金样。输出的底托绝不可歪斜、透视变形、裁掉青蓝光影或将黑底截图烘焙进透明PNG；合法的暗色实体侧壁又不能简单删黑。先读[HG0～HG6立体光晕/黑边专项](../../docs/VISUAL_UNIT_GLOW_REGRESSION.md)，以真实SVG/3D几何和单独发光层重建，检查每组glyph/plinth光晕完整、锚点不被通用icon紧裁破坏；使用[逐业务视觉单元同视口ROI复合校验](../../scripts/audit_visual_unit_composite.py)与原图比对，未跑真实HTML不得宣称已还原。
+**立体复合单元通用门禁**：所有存在底托、实体侧壁、前景符号、阴影、外发光的视觉单元，按[HG0～HG6立体光晕与黑边专项](../../docs/VISUAL_UNIT_GLOW_REGRESSION.md)分别建源图层并保留锚点，禁止将暗色实体误删、把页面背景混入图标，或按普通glyph自动裁断光晕。使用[同视口逐单元ROI复合校验](../../scripts/audit_visual_unit_composite.py)，没有真实HTML与原图证据不得宣称还原通过。
 
 **无PSD也必须继续高清切图**：002只有1672×941等扁平合成大屏、没有PSD/3D源层时，必须执行[无PSD高清重建SKILL](../source-free-hd-reconstruction/SKILL.md)：导航/业务符号用SVG可编辑矢量重绘，立体底托/地图使用程序化SVG/3D重建，输出满足实际CSS×DPR的独立PNG并在HTML同视口对照认可原图；不得继续放大43×48小截图、以缺PS为由停止或擅自改变造型配色。**重建的高清质量和与认可原图一致是两项独立验收。**
 
