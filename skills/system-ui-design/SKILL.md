@@ -69,6 +69,8 @@ SU01—SU08 是**系统业务场景/组织方式标签**，不可覆盖共同公
 
 在只有低清扁平原图、没有PSD的情况下，001应执行[无PSD高清重建SKILL](../source-free-hd-reconstruction/SKILL.md)，以可编辑SVG/程序化图形重绘图标并输出高清PNG与真实HTML；不得因无Photoshop拒绝实现，也不得用通用图标库替代用户认可图形。
 
+用户指出系统图标颜色偏离参考、黑色描边、CSS虽居中但可见图形偏心时，启用[CF0～CF7颜色与HTML可见主体专项](../../docs/COLOR_FIDELITY_HTML_ALIGNMENT.md)，按金样ROI保持颜色/光影层次，使用实际DOM中的图标视觉槽和PNG Alpha可见框验证位置，不能仅因元素盒子居中判通过。
+
 用户明确要求完整图标而拆分成glyph与底托时，必须额外交付完整视觉单元复合图和实际HTML截图；如果出现“分层后只剩一半、边缘毛刺、糊”，按[Photoshop级精修SKILL](../photoshop-grade-asset-extraction/SKILL.md)回到可编辑图层/矢量源进行非破坏式提取与R0～R7验收，不能通过放大已有小PNG伪装高清。
 
 > **切图任务强制加挂** [语义切图、PNG图标与HTML交付 SKILL](../semantic-asset-export/SKILL.md)：图标独立RGBA透明PNG；纯色/渐变/普通按钮背景优先CSS，只有真实必要或明确要求PNG的背景才独立完整导出，并按[资产角色与边缘质量](../../docs/ASSET_ROLE_AND_EDGE_QA.md)检查切图必要性、缺层及毛边，业务文字/按钮/菜单由HTML DOM呈现；用户要求前端源码时必须交 index.html、CSS、JS 与实际引用资源，验证导航/表单状态，禁止只交矩形区块PNG。**图标PNG及最终HTML须以用户认可效果图作金样，执行 [F0～F5视觉一致性验收](../../docs/ASSET_FIDELITY_REGRESSION.md)**，逐项核对图标轮廓、材质/发光、组件位置和DOM实际渲染；透明PNG存在或结构检查通过不代表视觉还原通过。**每个系统图标按 [I0～I5规范](../../docs/ICON_ASSET_ALIGNMENT.md) 去除多余透明边并确认图形在 PNG 自身居中**，再在实际 DOM 图标槽居中；不可用CSS位移掩盖偏心文件，不能切掉微弱光晕/投影。**对图标PNG里仍嵌有黑色/白色面板底块的，先按 [B0～B4语义分层](../semantic-asset-export/SKILL.md) 提取纯前景符号，再裁空白与居中；黑色不是可一键透明化的颜色，原有立体阴影需保留为组件层。**
