@@ -50,6 +50,83 @@ class PreciseMicroEditTest(unittest.TestCase):
     def result(self):
         return lib.check(self.before, self.after, self.plan)
 
+    def configure_underline_move(self):
+        # Text ends at y=15. Old underline y=23..24 (gap 8px),
+        # new underline y=17..18 (gap 2px) is closer and darker.
+        self.plan["allowed_regions"] = [[10, 23, 32, 2], [10, 17, 32, 2]]
+        self.plan["required_changed_regions"] = [
+            {"id": "remove-old-line", "rect": [10, 23, 32, 2], "min_changed_pixels": 64},
+            {"id": "paint-new-line", "rect": [10, 17, 32, 2], "min_changed_pixels": 64},
+        ]
+        self.plan["color_direction"] = "any"
+        self.plan["min_changed_pixels"] = 128
+        self.plan["max_changed_pixels"] = 128
+        self.plan["max_channel_delta"] = 90
+
+    def test_underline_moved_closer_and_darkened_passes_two_region_gate(self):
+        self.configure_underline_move()
+        self.after = self.before.copy()
+        for x in range(10, 42):
+            for y in (23, 24):
+                self.after.putpixel((x, y), (12, 44, 48, 255))
+            for y in (17, 18):
+                self.after.putpixel((x, y), (35, 65, 67, 255))
+        result = self.result()
+        self.assertEqual(result["status"], "PASS", result["errors"])
+        self.assertEqual([r["actual_changed_pixels"] for r in result["required_changed_regions"]], [64, 64])
+        self.assertLess(17-15, 23-15)  # specific synthetic visual gap is shorter
+        self.assertLess(lib.luminance((35, 65, 67, 255)),
+                        lib.luminance((52, 85, 88, 255)))
+
+    def test_only_darkening_line_without_moving_fails_mandatory_new_region(self):
+        self.configure_underline_move()
+        result = self.result()  # setUp darkens old line but does not move it
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("paint-new-line" in e for e in result["errors"]))
+
+    def test_moving_line_without_removing_old_line_fails_mandatory_old_region(self):
+        self.configure_underline_move()
+        for x in range(10, 42):
+            for y in (17, 18):
+                self.after.putpixel((x, y), (35, 65, 67, 255))
+        # The old line has darkened in setup; make old line unchanged to
+        # model a newly drawn second underline.
+        for x in range(10, 42):
+            for y in (23, 24):
+                self.after.putpixel((x, y), self.before.getpixel((x, y)))
+        result = self.result()
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("remove-old-line" in e for e in result["errors"]))
+
+    def test_moved_line_but_right_panel_recolored_still_fails(self):
+        self.configure_underline_move()
+        self.after = self.before.copy()
+        for x in range(10, 42):
+            for y in (23, 24):
+                self.after.putpixel((x, y), (12, 44, 48, 255))
+            for y in (17, 18):
+                self.after.putpixel((x, y), (35, 65, 67, 255))
+        self.after.putpixel((55, 12), (140, 140, 145, 255))
+        self.assertTrue(any("outside authorized" in e for e in self.result()["errors"]))
+
+    def test_mandatory_subregion_cannot_escape_allowed_regions(self):
+        self.configure_underline_move()
+        self.plan["required_changed_regions"][1]["rect"] = [10, 16, 32, 3]
+        with self.assertRaisesRegex(ValueError, "cannot exceed allowed"):
+            self.result()
+
+    def test_mandatory_subregion_cannot_override_protection(self):
+        self.configure_underline_move()
+        self.plan["protected_regions"].append([10, 17, 32, 2])
+        with self.assertRaisesRegex(ValueError, "overlap protected"):
+            self.result()
+
+    def test_mandatory_subregion_ids_cannot_duplicate(self):
+        self.configure_underline_move()
+        self.plan["required_changed_regions"][1]["id"] = "remove-old-line"
+        with self.assertRaisesRegex(ValueError, "unique"):
+            self.result()
+
     def test_only_darkened_connect_underline_passes(self):
         r = self.result()
         self.assertEqual(r["status"], "PASS", r["errors"])
