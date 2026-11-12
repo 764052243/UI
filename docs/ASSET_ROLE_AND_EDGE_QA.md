@@ -95,6 +95,8 @@
 
 ## 六、实用检查与未验证限制
 
+当一个组件从PSD拆为多张PNG后，**视觉单元是否完整必须单独验收**：一个`plinth`不等于完整`glyph＋plinth`业务图标；用户要完整图标时必须交复合PNG/或组合预览及真实HTML。实际源分辨率不足不能通过插值修复，执行[Photoshop级源层精修SKILL](../skills/photoshop-grade-asset-extraction/SKILL.md)与`scripts/audit_cutout_source_quality.py`检查原生像素、目标DPR、层叠配对、完整合成预览。这些依旧不能自动保证无毛边，必须回源图层处理。
+
 1. 在真实资源目录执行 `python scripts/verify_ui_delivery.py delivery/ --zip delivery.zip`；它对1.1清单检查角色与资源、背景策略、PNG大小与透明度、组件裁断风险、必要性说明，并与原有HTML/ZIP测试兼容。
 2. 运行 `python scripts/audit_asset_edges.py delivery/asset-manifest.json --root delivery --contact-sheet working/asset-edges.png`，生成组件边界、Alpha和可疑空白/纯色背景诊断及三底色预览（不会修改原PNG），用金样逐件复核。
 3. **脚本PASS只说明它能检测的硬约束通过**；不会知道中国地图哪个省缺边、3D平台哪个透视缺失、边缘是否完全美观。真正高保真仍依赖原件、分层源图、同画布真实HTML与用户验收。
