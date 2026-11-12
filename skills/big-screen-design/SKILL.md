@@ -59,6 +59,8 @@ description: UI设计师项目中数据大屏、驾驶舱、指挥中心、工�
 
 ## 10. 参考图与交付
 
+**色彩/材质/HTML居中最新未通过项**：002用户本轮指出，SVG图标虽更清晰，但与第三张认可原图相比仍有青蓝/橙色失真、灰旧和脏黑边，第四张HTML目标图形相对视觉槽不居中。先加载[CF0～CF7颜色与DOM可见中心专项](../../docs/COLOR_FIDELITY_HTML_ALIGNMENT.md)，逐个KPI/状态图标和底部业务单元固定金样ROI与真实槽位，执行[sRGB前景差异＋实际DOM槽位核验](../../scripts/audit_color_layout.py)及[浏览器Alpha几何采集](../../scripts/capture_ui_alignment.js)；禁止用通用主题色/过度锐化代替原版材质，也不能以flex框居中替代可见像素居中。
+
 **底部业务五个立体单元专项（最新未通过项）**：用户明确以最后一张大屏原图为唯一金样。输出的底托绝不可歪斜、透视变形、裁掉青蓝光影或将黑底截图烘焙进透明PNG；合法的暗色实体侧壁又不能简单删黑。先读[HG0～HG6立体光晕/黑边专项](../../docs/VISUAL_UNIT_GLOW_REGRESSION.md)，以真实SVG/3D几何和单独发光层重建，检查每组glyph/plinth光晕完整、锚点不被通用icon紧裁破坏；使用[逐业务视觉单元同视口ROI复合校验](../../scripts/audit_visual_unit_composite.py)与原图比对，未跑真实HTML不得宣称已还原。
 
 **无PSD也必须继续高清切图**：002只有1672×941等扁平合成大屏、没有PSD/3D源层时，必须执行[无PSD高清重建SKILL](../source-free-hd-reconstruction/SKILL.md)：导航/业务符号用SVG可编辑矢量重绘，立体底托/地图使用程序化SVG/3D重建，输出满足实际CSS×DPR的独立PNG并在HTML同视口对照认可原图；不得继续放大43×48小截图、以缺PS为由停止或擅自改变造型配色。**重建的高清质量和与认可原图一致是两项独立验收。**
