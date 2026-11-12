@@ -22,7 +22,7 @@
 
 ## PNG 图标裁边与居中验收
 
-用户反馈导出的 `assets/icons` PNG **仍有冗余空白、主体偏心、大小不统一**时，优先读取 [图标紧裁与居中规范](docs/ICON_ASSET_ALIGNMENT.md)，使用 [不覆盖源图的批量检查/紧裁工具](scripts/normalize_ui_icons.py) 对**实际原PNG**逐个检查和归一化，再运行 [完整切图包验证器](scripts/verify_ui_delivery.py)；最后还要与用户认可视觉金样进行人工逐图标/浏览器对照，不能将“Alpha/像素框合格”说成高保真完成。
+用户反馈导出的 `assets/icons` PNG **仍有冗余空白、主体偏心、大小不统一或黑色底块残留**时，优先读取 [图标紧裁、背景分离与居中规范](docs/ICON_ASSET_ALIGNMENT.md)，使用 [不覆盖源图的批量检查/紧裁工具](scripts/normalize_ui_icons.py) 对**实际原PNG**逐个检查和归一化，再运行 [完整切图包验证器](scripts/verify_ui_delivery.py)；最后还要与用户认可视觉金样进行人工逐图标/浏览器对照，不能将“Alpha/像素框合格”说成高保真完成。
 
 切图验证脚本的合成单元测试可运行 `python -m unittest discover -s tests -p "test_*.py" -v`。相关 PR/主分支改动按 [.github/workflows/ui-asset-quality.yml](.github/workflows/ui-asset-quality.yml) 配置自动测试；**只有实际运行并取得结果才能声称 CI 通过**，仓库没有用户真实素材也就不能替001/002验收真实切图。
 
