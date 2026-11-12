@@ -23,22 +23,20 @@
 
 ```json
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "canvas": {"width": 1920, "height": 1080},
+  "background_strategy": "css",
   "entry_html": "index.html",
   "css": ["css/style.css"],
   "js": ["js/app.js"],
   "preview": "preview/full-page.png",
   "assets": [
     {
-      "id": "main-background",
-      "role": "background",
-      "path": "assets/backgrounds/bg_dashboard.png"
-    },
-    {
       "id": "overview-nav-icon",
       "role": "icon",
-      "path": "assets/icons/icon_nav_overview.png"
+      "path": "assets/icons/icon_nav_overview.png",
+      "source_kind": "layer_export",
+      "reason_png": "independent glowing navigation symbol"
     }
   ],
   "required_text": ["业务运营可视化平台", "综合概览"],
@@ -47,10 +45,20 @@
 ```
 
 - `canvas.width/height`：正整数；整页 `background` 与 `preview` 需匹配。
-- `assets`：列出所有交付并被HTML/CSS/JS使用的 PNG，`role` 为 `background/icon/component`。至少存在一份背景和一份透明图标，除非用户明确删除某类别。图标以独立文件逐个声明。**每个 `role=icon` 的真实PNG还必须通过 I0～I5 规范**（[逐图标紧裁/居中与保真](ICON_ASSET_ALIGNMENT.md)）：不可只满足“有Alpha”，四侧多余透明边距与可见主体偏心必须检测并修复。**当PNG内部仍有不透明黑/白矩形面板时，即使 Alpha 包围框完美居中也必须按B0～B4退回语义分层；图标=前景符号，原金样立体底托/衬底应作为独立组件或CSS层在HTML中重组。**
+- `assets`：列出所有交付并被HTML/CSS/JS使用的 PNG，`role` 为 `background/icon/component`。新任务采用1.1清单：背景可选择CSS策略而**无需任何背景PNG**；只有实际纹理/图层必须以图片还原或用户明确要求背景PNG，才选择image策略并输出一份完整背景。独立图标应按需求提供；旧1.0清单仅保留兼容，不代表新验收标准。图标以独立文件逐个声明。**每个 `role=icon` 的真实PNG还必须通过 I0～I5 规范**（[逐图标紧裁/居中与保真](ICON_ASSET_ALIGNMENT.md)）：不可只满足“有Alpha”，四侧多余透明边距与可见主体偏心必须检测并修复。**当PNG内部仍有不透明黑/白矩形面板时，即使 Alpha 包围框完美居中也必须按B0～B4退回语义分层；图标=前景符号，原金样立体底托/衬底应作为独立组件或CSS层在HTML中重组。**
 - `required_text`：必须由 HTML DOM 提供的页面主标题/菜单/关键静态标签；动态指标值由 JS 渲染的，静态校验可能无法断定，需浏览器实测。
 - `required_interactions`：用户明确要求的菜单、切换、折叠、筛选等可操作状态名称。静态检测只能查源码存在，不验证事件行为；不能仅凭测试脚本通过说交互通过。
 - 页面应按实际素材和业务字段调整；交付者不得通过删掉 required_text、required_interactions 或把图标改 role 为 component 绕开未完成的项目。
+
+### 1.1 资源角色与背景策略（新交付强制）
+
+- `background_strategy: "css"`：CSS实际绘制简单底色/渐变，不需要任何背景 PNG；若偷偷保留冗余PNG，资源目录检查会失败。
+- `background_strategy: "image"`：只有不可替代图像背景或用户明确要求背景PNG时使用；此时必须交全画布、无透明洞的真正背景PNG。需要PNG但纯色背景的情况，应在`required_asset_roles`中记录用户明确的背景要求。
+- `source_kind`：每张PNG记录`layer_export / masked / reconstructed`；背景若仅从合成截图蒙版抠取不能直接签收；仍需源层或高保真重建与人工核对。
+- `reason_png`：每张PNG需要具体说明为什么不能稳定用DOM/CSS复现；不能按素材数量交差。复杂组件还需`edge_policy: "closed"`或有金样依据的`"intentional_bleed"`。
+- 需要交PNG背景的用户明确要求应写进`required_asset_roles: ["background"]`，不得因为CSS方案方便而遗漏。
+- 优先阅读[资产裁切角色与边缘质量](ASSET_ROLE_AND_EDGE_QA.md)，对可复用3D底托去重，检查中央地图与底座是否完整；文件名含`masked`不代表遮罩已经正确。
+- 旧 `schema_version:"1.0"` 保持兼容，**不能当作新交付不做资产必要性/边缘检查的借口**。
 
 ## 三、可复用的静态校验
 
@@ -60,6 +68,7 @@
 python -m pip install Pillow
 python scripts/verify_ui_delivery.py delivery/
 python scripts/verify_ui_delivery.py delivery/ --zip delivery.zip
+python scripts/audit_asset_edges.py delivery/asset-manifest.json --root delivery --contact-sheet working/edge-review.png
 python -m unittest discover -s tests -p "test_verify_ui_delivery.py" -v
 ```
 
