@@ -243,8 +243,16 @@ def scan(root, zip_path=None):
                         }
                         if bbox is None:
                             errors.append("component has no visible content: " + p)
-                        elif touches and asset.get("edge_policy") != "intentional_bleed":
-                            errors.append("component touches PNG canvas edge; incomplete clip risk: " + p)
+                        else:
+                            coverage = ((bbox[2] - bbox[0]) / rgba.width,
+                                        (bbox[3] - bbox[1]) / rgba.height)
+                            report["component_edges"][p]["alpha_bbox_coverage_xy"] = [
+                                round(coverage[0], 4), round(coverage[1], 4)
+                            ]
+                            if min(coverage) < 0.65:
+                                errors.append("component has oversized blank canvas or partial extraction: " + p)
+                            if touches and asset.get("edge_policy") != "intentional_bleed":
+                                errors.append("component touches PNG canvas edge; incomplete clip risk: " + p)
                 if role == "icon" and (alpha is None or alpha[0] >= 255 or alpha[1] <= 0):
                     errors.append("icon lacks transparent/visible pixels: " + p)
                 elif role == "icon":
