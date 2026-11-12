@@ -209,6 +209,8 @@ def scan(root, zip_path=None):
                     raise ValueError("icon must be in assets/icons/: " + p)
                 if role == "background" and not p.startswith("assets/backgrounds/"):
                     raise ValueError("background must be in assets/backgrounds/: " + p)
+                if strict_roles and role == "component" and not p.startswith("assets/components/"):
+                    raise ValueError("component must be in assets/components/: " + p)
                 size, alpha = read_png(file, role)
                 if role == "background" and size != (width, height):
                     errors.append("background size mismatch: " + p)
@@ -287,6 +289,12 @@ def scan(root, zip_path=None):
         declared_icons = {path for role, path, _ in declared if role == "icon"}
         for undeclared in sorted(actual_icons - declared_icons):
             errors.append("undeclared icon file skipped by manifest: " + undeclared)
+        if strict_roles:
+            asset_root = root / "assets"
+            all_png = {p.relative_to(root).as_posix() for p in asset_root.rglob("*.png")} if asset_root.is_dir() else set()
+            for extra in sorted(all_png - asset_paths):
+                if extra not in actual_icons:
+                    errors.append("unnecessary or undeclared PNG asset: " + extra)
         if "icon" not in roles:
             errors.append("no semantic PNG icon declared")
         if strict_roles:
