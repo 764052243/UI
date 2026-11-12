@@ -50,11 +50,12 @@ def detect_rectangular_matte(image):
         for xy in edge:
             a = alpha.getpixel(xy)
             r, g, b = rgb.getpixel(xy)
-            neutral = max(r, g, b) - min(r, g, b) <= 24
-            if a >= 245 and neutral:
-                if max(r, g, b) <= 65:
+            # Include cool near-black/navy UI panel mattes, not only pure black.
+            near_neutral = max(r, g, b) - min(r, g, b) <= 50
+            if a >= 245 and near_neutral:
+                if max(r, g, b) <= 90:
                     count['dark'] += 1
-                if min(r, g, b) >= 218:
+                if min(r, g, b) >= 205:
                     count['light'] += 1
         for key in ratios:
             ratios[key].append(round(count[key] / len(edge), 3))
