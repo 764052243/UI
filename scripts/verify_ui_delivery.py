@@ -92,6 +92,63 @@ def referenced_assets(source, text):
     return {normalized for ref in refs if (normalized := resolve_reference(source, ref))}
 
 
+
+def inspect_ornamental_frame(rgba, asset):
+    """Conservative pixel gate for a stand-alone transparent decorative frame.
+
+    The specified inner rectangle is a content-safe area of transparent pixels;
+    visual gold fidelity, actual CSS layering, and 9-slice distortion still need
+    browser review. A dark panel fill belongs below this transparent overlay.
+    """
+    width, height = rgba.size
+    bounds = asset.get("frame_inner_rect")
+    if (not isinstance(bounds, list) or len(bounds) != 4 or
+            any(type(v) is not int for v in bounds)):
+        raise ValueError("ornamental_frame requires frame_inner_rect [left,top,right,bottom]")
+    x0, y0, x1, y1 = bounds
+    if not (0 < x0 < x1 < width and 0 < y0 < y1 < height):
+        raise ValueError("ornamental_frame inner rect must be strictly inside PNG canvas")
+    if ((x1 - x0) / width < 0.4 or (y1 - y0) / height < 0.4):
+        raise ValueError("ornamental_frame inner rect is too small to prove content area")
+    strategy = asset.get("frame_render_strategy")
+    if strategy not in ("fixed_overlay", "nine_slice"):
+        raise ValueError("ornamental_frame requires frame_render_strategy fixed_overlay/nine_slice")
+    if strategy == "nine_slice":
+        cuts = asset.get("frame_slice_px")
+        if (not isinstance(cuts, list) or len(cuts) != 4 or
+                any(type(v) is not int or v <= 0 for v in cuts)):
+            raise ValueError("nine_slice ornamental_frame needs frame_slice_px [top,right,bottom,left]")
+        top, right, bottom, left = cuts
+        if top + bottom >= height or left + right >= width:
+            raise ValueError("nine_slice corners overlap PNG canvas")
+    channel = rgba.getchannel("A")
+    central = channel.crop((x0, y0, x1, y1))
+    hist = central.histogram()
+    nontransparent = sum(hist[17:])
+    center_fraction = nontransparent / ((x1 - x0) * (y1 - y0))
+    regions = {
+        "top": (x0, 0, x1, y0),
+        "bottom": (x0, y1, x1, height),
+        "left": (0, y0, x0, y1),
+        "right": (x1, y0, width, y1),
+        "top_left": (0, 0, x0, y0),
+        "top_right": (x1, 0, width, y0),
+        "bottom_left": (0, y1, x0, height),
+        "bottom_right": (x1, y1, width, height),
+    }
+    sides = {}
+    for name, rect in regions.items():
+        alpha_hist = channel.crop(rect).histogram()
+        sides[name] = sum(alpha_hist[17:])
+    return {
+        "frame_inner_rect": bounds, "frame_render_strategy": strategy,
+        "inner_visible_alpha_fraction": round(center_fraction, 6),
+        "edge_and_corner_alpha_pixels": sides,
+        "has_transparent_content_area": center_fraction <= 0.05,
+        "all_sides_and_corners_present": all(v > 0 for v in sides.values())
+    }
+
+
 def scan(root, zip_path=None):
     errors = []
     warnings = [
@@ -121,6 +178,14 @@ def scan(root, zip_path=None):
             value not in ("background", "icon", "component") for value in required_roles
         ):
             raise ValueError("required_asset_roles must contain only known role names")
+        required_frame_ids = doc.get("required_frame_asset_ids", [])
+        if (not isinstance(required_frame_ids, list) or
+                any(not isinstance(value, str) or not value.strip() for value in required_frame_ids) or
+                len(required_frame_ids) != len(set(required_frame_ids))):
+            raise ValueError("required_frame_asset_ids must be unique nonempty strings")
+        if required_frame_ids and not strict_roles:
+            raise ValueError("required_frame_asset_ids needs schema_version 1.1")
+        delivered_frame_ids = set()
         report["background_strategy"] = background_strategy
         if not strict_roles:
             warnings.append("Legacy schema 1.0 has no asset decision audit; prefer 1.1 for new deliveries.")
@@ -201,6 +266,13 @@ def scan(root, zip_path=None):
                     errors.append("schema 1.1 component needs edge_policy: " + str(aid))
                 if role == "background" and source_kind == "masked":
                     errors.append("masked foreground screenshot cannot be valid full-canvas background: " + str(aid))
+                if asset.get("component_type") is not None and asset["component_type"] != "ornamental_frame":
+                    errors.append("unknown component_type; only ornamental_frame is supported: " + str(aid))
+                if asset.get("component_type") == "ornamental_frame" and role != "component":
+                    errors.append("ornamental_frame must have component role: " + str(aid))
+                if aid in required_frame_ids and (role != "component" or
+                                                 asset.get("component_type") != "ornamental_frame"):
+                    errors.append("required frame asset id is not an ornamental_frame component: " + str(aid))
             try:
                 p, file = required_file(asset.get("path"), "asset", ".png")
                 if p in asset_paths:
@@ -244,6 +316,17 @@ def scan(root, zip_path=None):
                         if bbox is None:
                             errors.append("component has no visible content: " + p)
                         else:
+                            if asset.get("component_type") == "ornamental_frame":
+                                try:
+                                    frame_report = inspect_ornamental_frame(rgba, asset)
+                                    report.setdefault("ornamental_frames", {})[p] = frame_report
+                                    if not frame_report["has_transparent_content_area"]:
+                                        errors.append("ornamental_frame has opaque content-area matte: " + p)
+                                    if not frame_report["all_sides_and_corners_present"]:
+                                        errors.append("ornamental_frame is missing frame edge or corner: " + p)
+                                    delivered_frame_ids.add(aid)
+                                except ValueError as frame_error:
+                                    errors.append(str(frame_error) + ": " + p)
                             coverage = ((bbox[2] - bbox[0]) / rgba.width,
                                         (bbox[3] - bbox[1]) / rgba.height)
                             report["component_edges"][p]["alpha_bbox_coverage_xy"] = [
@@ -317,6 +400,10 @@ def scan(root, zip_path=None):
         if "icon" not in roles:
             errors.append("no semantic PNG icon declared")
         if strict_roles:
+            for fid in required_frame_ids:
+                if fid not in delivered_frame_ids:
+                    errors.append("required ornamental_frame PNG not delivered or invalid: " + fid)
+            report["required_frame_asset_ids"] = required_frame_ids
             for expected in required_roles:
                 if expected not in roles:
                     errors.append("explicitly required role not delivered: " + expected)
