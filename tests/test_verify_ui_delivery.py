@@ -310,6 +310,18 @@ class SemanticDeliveryTests(unittest.TestCase):
         self.add_component(clipped=True)
         self.assertTrue(any("touches PNG canvas edge" in e for e in self.scan()["errors"]))
 
+    def test_v11_partial_half_component_canvas_fails(self):
+        self.enable_v11("css")
+        self.add_component()
+        img = Image.new("RGBA", (24, 24), (0, 0, 0, 0))
+        for y in range(3, 9):
+            for x in range(3, 21):
+                img.putpixel((x, y), (0, 200, 255, 255))
+        img.save(self.root / "assets/components/platform.png")
+        result = self.scan()
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("partial extraction" in e for e in result["errors"]))
+
     def test_v11_explicit_intentional_bleed_passes_geometry(self):
         self.enable_v11("css")
         self.add_component(policy="intentional_bleed", clipped=True)
