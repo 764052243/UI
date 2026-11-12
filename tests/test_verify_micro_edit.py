@@ -18,7 +18,7 @@ class PreciseMicroEditTest(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         self.before = Image.new("RGBA", (80, 40), (12, 44, 48, 255))
-        # Left side: CONNECT word approximated as white ink; right warm panel.
+        # Synthetic foreground label and adjacent light panel for protected-region regression.
         for x in range(10, 42):
             for y in range(8, 15):
                 self.before.putpixel((x, y), (185, 204, 210, 255))
