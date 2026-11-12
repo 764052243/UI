@@ -62,7 +62,7 @@ Adobe官方可核验的操作说明：
 
 ## D. 可执行的分辨率/完整单元验收
 
-对应辅助检查器：`scripts/audit_cutout_source_quality.py`。
+对应辅助检查器：`scripts/audit_cutout_source_quality.py`，实际回归证据见[PS切图与完整视觉单元回归](../../docs/PS_CUTOUT_REGRESSION.md)。
 
 - 用 JSON 记录每项 `asset_path`、`role`、`visual_unit`、`layer_role`（`glyph/plinth/composite/map/standalone`）、`alignment_mode`（`tight/layer_anchor`）、`target_css_px`、`target_dpr`、`source_native_px` 和可选 `composite_preview`。导出完整图与独立源层必须保持同一个`visual_unit`。
 - 必须比较**实际文件像素**与**显示像素×DPR**。如果文件不足，则FAIL；如果仅靠小位图插值“放大”但源像素不足，也必须FAIL。无`source_native_px`需标未验证来源，不能谎称原生高清。
