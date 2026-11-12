@@ -109,8 +109,20 @@ def scan(root, zip_path=None):
         if not manifest_path.is_file():
             raise ValueError("asset-manifest.json is missing")
         doc = json.loads(manifest_path.read_text(encoding="utf-8"))
-        if not isinstance(doc, dict) or doc.get("schema_version") != "1.0":
+        if not isinstance(doc, dict) or doc.get("schema_version") not in ("1.0", "1.1"):
             raise ValueError("unsupported manifest schema_version")
+        strict_roles = doc.get("schema_version") == "1.1"
+        background_strategy = doc.get("background_strategy", "image")
+        if strict_roles and background_strategy not in ("image", "css"):
+            raise ValueError("schema 1.1 requires background_strategy=image or css")
+        required_roles = doc.get("required_asset_roles", [])
+        if not isinstance(required_roles, list) or any(
+            value not in ("background", "icon", "component") for value in required_roles
+        ):
+            raise ValueError("required_asset_roles must contain only known role names")
+        report["background_strategy"] = background_strategy
+        if not strict_roles:
+            warnings.append("Legacy schema 1.0 has no asset decision audit; prefer 1.1 for new deliveries.")
         canvas = doc.get("canvas")
         if not isinstance(canvas, dict):
             raise ValueError("canvas object is missing")
@@ -143,6 +155,10 @@ def scan(root, zip_path=None):
             for item in group:
                 p, full = required_file(item, name, ext)
                 sources[p] = full.read_text(encoding="utf-8")
+        if strict_roles and background_strategy == "css":
+            css_text = "\n".join(sources[p] for p in css_paths)
+            if not re.search(r"(?<![\w-])background(?:-color|-image)?\s*:", css_text, flags=re.I):
+                errors.append("css background strategy has no background property in declared CSS")
         html_refs = HtmlScan()
         html_refs.feed(sources[html_path])
         for source_file in [*css_paths, *js_paths]:
@@ -172,6 +188,17 @@ def scan(root, zip_path=None):
                 continue
             asset_ids.add(aid)
             roles.append(role)
+            if strict_roles:
+                source_kind = asset.get("source_kind")
+                reason = asset.get("reason_png")
+                if source_kind not in ("layer_export", "masked", "reconstructed"):
+                    errors.append("schema 1.1 asset missing source_kind: " + str(aid))
+                if not isinstance(reason, str) or len(reason.strip()) < 12:
+                    errors.append("schema 1.1 asset needs specific reason_png: " + str(aid))
+                if role == "component" and asset.get("edge_policy") not in ("closed", "intentional_bleed"):
+                    errors.append("schema 1.1 component needs edge_policy: " + str(aid))
+                if role == "background" and source_kind == "masked":
+                    errors.append("masked foreground screenshot cannot be valid full-canvas background: " + str(aid))
             try:
                 p, file = required_file(asset.get("path"), "asset", ".png")
                 if p in asset_paths:
@@ -185,6 +212,35 @@ def scan(root, zip_path=None):
                 size, alpha = read_png(file, role)
                 if role == "background" and size != (width, height):
                     errors.append("background size mismatch: " + p)
+                if strict_roles and role == "background":
+                    if alpha is not None and alpha[0] < 255:
+                        errors.append("full-canvas background has transparent holes: " + p)
+                    with Image.open(file) as backdrop:
+                        # Small sample avoids decoding 4K+ images into huge color histograms.
+                        sample = backdrop.convert("RGB").resize((48, 48), Image.Resampling.BILINEAR)
+                        palette = sample.getcolors(maxcolors=48 * 48)
+                        dominant = max((count for count, _ in palette), default=0)
+                        ratio = dominant / (48 * 48)
+                        report.setdefault("background_samples", {})[p] = {"dominant_exact_fraction": round(ratio, 4)}
+                        if ratio > 0.985 and "background" not in required_roles:
+                            errors.append("near-solid background image should use CSS unless specifically required: " + p)
+                        elif ratio > 0.985:
+                            warnings.append("Near-solid background PNG supplied by explicit asset requirement: " + p)
+                if strict_roles and role == "component":
+                    with Image.open(file) as artwork:
+                        rgba = artwork.convert("RGBA")
+                        bbox = rgba.getchannel("A").getbbox()
+                        touches = (bbox is None or bbox[0] == 0 or bbox[1] == 0
+                                   or bbox[2] == rgba.width or bbox[3] == rgba.height)
+                        report.setdefault("component_edges", {})[p] = {
+                            "alpha_bbox": list(bbox) if bbox else None,
+                            "touches_canvas_edge": touches,
+                            "edge_policy": asset.get("edge_policy")
+                        }
+                        if bbox is None:
+                            errors.append("component has no visible content: " + p)
+                        elif touches and asset.get("edge_policy") != "intentional_bleed":
+                            errors.append("component touches PNG canvas edge; incomplete clip risk: " + p)
                 if role == "icon" and (alpha is None or alpha[0] >= 255 or alpha[1] <= 0):
                     errors.append("icon lacks transparent/visible pixels: " + p)
                 elif role == "icon":
@@ -233,7 +289,15 @@ def scan(root, zip_path=None):
             errors.append("undeclared icon file skipped by manifest: " + undeclared)
         if "icon" not in roles:
             errors.append("no semantic PNG icon declared")
-        if "background" not in roles:
+        if strict_roles:
+            for expected in required_roles:
+                if expected not in roles:
+                    errors.append("explicitly required role not delivered: " + expected)
+            if background_strategy == "image" and "background" not in roles:
+                errors.append("image background strategy needs a full-canvas PNG background")
+            if background_strategy == "css" and "background" in roles:
+                errors.append("unnecessary PNG background declared under css strategy")
+        elif "background" not in roles:
             errors.append("no full-canvas background declared")
         report["assets"] = [{"role": r, "path": p, "dimensions": s} for r, p, s in declared]
 
