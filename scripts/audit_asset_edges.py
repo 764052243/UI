@@ -52,6 +52,10 @@ def inspect_png(path, role, policy="closed"):
         if a == 0 and (r > 0 or g > 0 or b > 0)
     )
     problems = []
+    coverage = ((bbox[2] - bbox[0]) / image.width,
+                (bbox[3] - bbox[1]) / image.height)
+    if role == "component" and min(coverage) < .65:
+        problems.append("oversized blank canvas or partial component extraction")
     if role in ("icon", "component") and any(touches.values()) and policy != "intentional_bleed":
         problems.append("visible alpha touches canvas boundary; clipped edge or halo risk")
     if role == "background" and alpha_min < 255:
@@ -63,6 +67,7 @@ def inspect_png(path, role, policy="closed"):
     return {
         "dimensions": [image.width, image.height], "role": role,
         "alpha_bbox": list(bbox), "touches_edge": touches,
+        "alpha_bbox_coverage_xy": [round(coverage[0], 4), round(coverage[1], 4)],
         "edge_policy": policy, "alpha_range": [alpha_min, alpha_max],
         "semi_alpha_fraction": round(semitransparent / total, 6),
         "invisible_rgb_fraction": round(rgb_when_invisible / total, 6),
