@@ -108,6 +108,18 @@ class IconTrimTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'suspected opaque rectangular background'):
             lib.normalize(icon)
 
+    def test_navy_panel_mat_background_is_detected(self):
+        icon = Image.new('RGBA', (48, 48), (0, 0, 0, 0))
+        for y in range(2, 46):
+            for x in range(2, 46):
+                icon.putpixel((x, y), (8, 27, 45, 255))
+        for y in range(18, 28):
+            for x in range(18, 30):
+                icon.putpixel((x, y), (0, 235, 245, 255))
+        result = lib.analyze(icon)
+        self.assertTrue(result['suspected_baked_background']['suspected'])
+        self.assertEqual(result['suspected_baked_background']['matte_kind'], 'dark')
+
     def test_transparent_png_with_baked_white_rectangle_is_rejected(self):
         icon = Image.new('RGBA', (48, 48), (0, 0, 0, 0))
         for y in range(2, 46):
