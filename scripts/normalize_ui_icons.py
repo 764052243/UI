@@ -23,6 +23,49 @@ def read_icon(path):
         raise ValueError('unreadable PNG: ' + str(exc)) from exc
 
 
+def detect_rectangular_matte(image):
+    """Conservative warning for opaque near-black/white rectangular backing.
+
+    Uses the solid-alpha core rather than the overall alpha bbox so a faint
+    glow outside a rectangular matte cannot conceal it. This is a gate for
+    manual layer extraction, never an automatic background eraser.
+    """
+    alpha = image.getchannel('A')
+    core = alpha.point(lambda a: 255 if a >= 245 else 0).getbbox()
+    if core is None:
+        return {'suspected': False, 'reason': 'no opaque core'}
+    x0, y0, x1, y1 = core
+    if x1 - x0 < 12 or y1 - y0 < 12:
+        return {'suspected': False, 'reason': 'core too small'}
+    rgb = image.convert('RGB')
+    coords = [
+        [(x, y0) for x in range(x0, x1)],
+        [(x, y1 - 1) for x in range(x0, x1)],
+        [(x0, y) for y in range(y0, y1)],
+        [(x1 - 1, y) for y in range(y0, y1)],
+    ]
+    ratios = {'dark': [], 'light': []}
+    for edge in coords:
+        count = {'dark': 0, 'light': 0}
+        for xy in edge:
+            a = alpha.getpixel(xy)
+            r, g, b = rgb.getpixel(xy)
+            neutral = max(r, g, b) - min(r, g, b) <= 24
+            if a >= 245 and neutral:
+                if max(r, g, b) <= 65:
+                    count['dark'] += 1
+                if min(r, g, b) >= 218:
+                    count['light'] += 1
+        for key in ratios:
+            ratios[key].append(round(count[key] / len(edge), 3))
+    kind = next((key for key, scores in ratios.items()
+                 if sum(value >= .82 for value in scores) >= 3), None)
+    return {'suspected': kind is not None, 'matte_kind': kind,
+            'opaque_core_bbox': list(core), 'border_ratios': ratios,
+            'reason': ('opaque rectangular neutral border; needs source-layer or '
+                       'manual semantic separation' if kind else 'no rectangular neutral border detected')}
+
+
 def analyze(image):
     width, height = image.size
     alpha = image.getchannel('A')
@@ -40,12 +83,14 @@ def analyze(image):
     max_center_skew = max(2, math.ceil(min(width, height) * 0.02))
     centered = abs(margins[0] - margins[2]) <= max_center_skew and abs(margins[1] - margins[3]) <= max_center_skew
     tight = max(margins) <= max_pad
+    matte = detect_rectangular_matte(image)
     return {
         'canvas': [width, height], 'alpha_bbox': [x0, y0, x1, y1],
         'transparent_margins_ltrb': margins, 'max_margin_px': max_pad,
         'max_center_skew_px': max_center_skew,
         'geometrically_centered': centered, 'tightly_trimmed': tight,
-        'pass': centered and tight,
+        'pass': centered and tight and not matte['suspected'],
+        'suspected_baked_background': matte,
         'manual_fidelity_review_required': True,
         'warnings': [
             'Alpha-based checks cannot detect black/white backgrounds baked into an icon.',
@@ -58,6 +103,8 @@ def normalize(image, padding=2):
     if type(padding) is not int or not 0 <= padding <= 64:
         raise ValueError('padding must be integer in 0..64')
     info = analyze(image)  # refuse opaque, blank, or corrupted file
+    if info['suspected_baked_background']['suspected']:
+        raise ValueError('suspected opaque rectangular background; cannot trim it away: use original layer or manual mask')
     x0, y0, x1, y1 = info['alpha_bbox']
     cut = image.crop((x0, y0, x1, y1))
     out = Image.new('RGBA', (cut.width + 2 * padding, cut.height + 2 * padding), (0, 0, 0, 0))
@@ -68,7 +115,7 @@ def normalize(image, padding=2):
         raise ValueError('post-trim visible pixels do not match source')
     after = analyze(out)
     if not after['pass']:
-        raise ValueError('normalized icon still has excessive margin or off-center alpha bounds')
+        raise ValueError('normalized icon failed matte/trim/center quality gate')
     return out, info, after
 
 
@@ -94,7 +141,7 @@ def run(source, output_dir=None, padding=2):
                 record.update(info)
                 record['status'] = 'PASS' if info['pass'] else 'FAIL'
                 if not info['pass']:
-                    record['error'] = 'excessive transparent whitespace or off-center visible bounds'
+                    record['error'] = ('suspected baked background / excessive transparency / off-center icon; manual review required')
             else:
                 normalized, before, after = normalize(icon, padding)
                 rel = path.relative_to(source) if source.is_dir() else Path(path.name)
