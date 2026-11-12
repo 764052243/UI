@@ -138,6 +138,18 @@ class ColorLayoutTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate item"):
             self.scan()
 
+    def test_layout_viewport_must_match_css_screenshot(self):
+        self.layout_report["viewport"] = [200, 160]
+        self.write_report()
+        with self.assertRaisesRegex(ValueError, "viewport differs"):
+            self.scan()
+
+    def test_geometry_must_come_from_dom_capture(self):
+        self.layout_report["capture_type"] = "manually_entered"
+        self.write_report()
+        with self.assertRaisesRegex(ValueError, "DOM\\+alpha capture type"):
+            self.scan()
+
     def test_reference_and_actual_viewport_mismatch_rejected(self):
         self.actual.resize((90, 80)).save(self.output)
         with self.assertRaisesRegex(ValueError, "canvas mismatch"):
