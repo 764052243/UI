@@ -174,6 +174,12 @@ def check(root, plan):
         measurements = json.load(file)
     if not isinstance(measurements, dict) or not isinstance(measurements.get("items"), list):
         raise ValueError("browser layout report must contain items[]")
+    if measurements.get("capture_type") != "browser_dom_image_alpha":
+        raise ValueError("browser layout report missing real DOM+alpha capture type")
+    if measurements.get("viewport") != list(gold.size):
+        raise ValueError("browser DOM viewport differs from screenshot; capture screenshot at CSS-pixel scale")
+    if type(measurements.get("device_pixel_ratio")) not in (int, float):
+        raise ValueError("browser layout report requires real device_pixel_ratio")
     captured = {}
     for item in measurements["items"]:
         if not isinstance(item, dict) or not isinstance(item.get("id"), str) or item["id"] in captured:
