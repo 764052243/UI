@@ -54,6 +54,18 @@ class EdgeAuditTests(unittest.TestCase):
         self.assertEqual(r["status"], "FAIL")
         self.assertTrue(r["assets"][0]["touches_edge"]["left"])
 
+    def test_half_visible_component_fails_geometry_review(self):
+        with Image.open(self.art) as original:
+            img = Image.new("RGBA", original.size, (0, 0, 0, 0))
+        for y in range(3, 9):
+            for x in range(4, 28):
+                img.putpixel((x, y), (0, 150, 255, 255))
+        img.save(self.art)
+        result = lib.audit(self.root, self.manifest)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("partial component extraction" in e
+                            for e in result["assets"][0]["problems"]))
+
     def test_intentional_bleed_has_documented_exception(self):
         with Image.open(self.art) as im:
             img = im.convert("RGBA")
