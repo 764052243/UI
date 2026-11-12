@@ -16,6 +16,12 @@ from pathlib import Path, PurePosixPath
 
 from PIL import Image, UnidentifiedImageError
 
+# Keep the packaged delivery checker and the standalone icon inspector on the
+# same conservative matte-detection algorithm. Running from scripts/ or from
+# unittest's importlib loader must both resolve this sibling module.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from normalize_ui_icons import detect_rectangular_matte
+
 
 class HtmlScan(HTMLParser):
     def __init__(self):
@@ -185,7 +191,9 @@ def scan(root, zip_path=None):
                     # Zero-alpha exterior may hide large whitespace or unequal spacing.
                     # This is a geometry gate, not proof of clean cutout or visual fidelity.
                     with Image.open(file) as raw:
-                        alpha_box = raw.convert("RGBA").getchannel("A").getbbox()
+                        rgba = raw.convert("RGBA")
+                        alpha_box = rgba.getchannel("A").getbbox()
+                        matte_info = detect_rectangular_matte(rgba)
                     if alpha_box is None:
                         errors.append("icon contains no visible alpha content: " + p)
                     else:
@@ -201,8 +209,11 @@ def scan(root, zip_path=None):
                             "transparent_margins_ltrb": margins,
                             "max_pad_px": max_pad,
                             "centered": centered,
-                            "tightly_trimmed": tight
+                            "tightly_trimmed": tight,
+                            "suspected_baked_background": matte_info
                         }
+                        if matte_info["suspected"]:
+                            errors.append("icon has suspected baked rectangular black/white background: " + p)
                         if not tight:
                             errors.append("icon has excessive transparent whitespace: " + p)
                         if not centered:

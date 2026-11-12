@@ -47,7 +47,7 @@
 ```
 
 - `canvas.width/height`：正整数；整页 `background` 与 `preview` 需匹配。
-- `assets`：列出所有交付并被HTML/CSS/JS使用的 PNG，`role` 为 `background/icon/component`。至少存在一份背景和一份透明图标，除非用户明确删除某类别。图标以独立文件逐个声明。**每个 `role=icon` 的真实PNG还必须通过 I0～I5 规范**（[逐图标紧裁/居中与保真](ICON_ASSET_ALIGNMENT.md)）：不可只满足“有Alpha”，四侧多余透明边距与可见主体偏心必须检测并修复。
+- `assets`：列出所有交付并被HTML/CSS/JS使用的 PNG，`role` 为 `background/icon/component`。至少存在一份背景和一份透明图标，除非用户明确删除某类别。图标以独立文件逐个声明。**每个 `role=icon` 的真实PNG还必须通过 I0～I5 规范**（[逐图标紧裁/居中与保真](ICON_ASSET_ALIGNMENT.md)）：不可只满足“有Alpha”，四侧多余透明边距与可见主体偏心必须检测并修复。**当PNG内部仍有不透明黑/白矩形面板时，即使 Alpha 包围框完美居中也必须按B0～B4退回语义分层；图标=前景符号，原金样立体底托/衬底应作为独立组件或CSS层在HTML中重组。**
 - `required_text`：必须由 HTML DOM 提供的页面主标题/菜单/关键静态标签；动态指标值由 JS 渲染的，静态校验可能无法断定，需浏览器实测。
 - `required_interactions`：用户明确要求的菜单、切换、折叠、筛选等可操作状态名称。静态检测只能查源码存在，不验证事件行为；不能仅凭测试脚本通过说交互通过。
 - 页面应按实际素材和业务字段调整；交付者不得通过删掉 required_text、required_interactions 或把图标改 role 为 component 绕开未完成的项目。

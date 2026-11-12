@@ -171,6 +171,30 @@ class SemanticDeliveryTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAIL")
         self.assertTrue(any("undeclared icon file" in e for e in result["errors"]))
 
+    def test_well_trimmed_but_baked_dark_rectangle_fails_delivery(self):
+        icon = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+        for y in range(2, 46):
+            for x in range(2, 46):
+                icon.putpixel((x, y), (6, 16, 21, 255))
+        for y in range(18, 30):
+            for x in range(18, 30):
+                icon.putpixel((x, y), (0, 210, 255, 255))
+        icon.save(self.root / "assets/icons/nav.png")
+        result = self.scan()
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("baked rectangular" in e for e in result["errors"]))
+        self.assertTrue(result["icon_geometry"]["assets/icons/nav.png"]["tightly_trimmed"])
+
+    def test_well_trimmed_but_baked_white_rectangle_fails_delivery(self):
+        icon = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+        for y in range(2, 46):
+            for x in range(2, 46):
+                icon.putpixel((x, y), (250, 250, 250, 255))
+        icon.save(self.root / "assets/icons/nav.png")
+        result = self.scan()
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("baked rectangular" in e for e in result["errors"]))
+
     def test_missing_icon_png_fails(self):
         (self.root / "assets/icons/nav.png").unlink()
         self.assertEqual(self.scan()["status"], "FAIL")
