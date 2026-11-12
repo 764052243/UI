@@ -6,6 +6,7 @@
 
 - [项目提示词 V3.0](PROJECT_INSTRUCTIONS_V3.0.md)：精简的任务调度入口；只有用户在 ChatGPT 项目设置实际保存后才成为项目指令。
 - [共同设计公约 V2.0](UI_DESIGN_CONVENTION.md)：跨大屏与业务系统的基线、参考图、配色、验收与归档规则。
+- [局部精准修改与防需求倒退 SKILL](skills/precise-local-edit/SKILL.md)：登录页/大屏/系统只有一条下划线、某个颜色或图标要调整时，执行“原认可基线＋只允许改A＋冻结其它全部＋目标确实改变且方向正确”的S0～S6门禁；[PNG微变更与冻结区检查器](scripts/verify_micro_edit.py)拒绝无改动、错方向及全图乱改。
 - [共用需求理解 SKILL](skills/design-requirement-understanding/SKILL.md)：001/002 都需先定位用户指代、反馈问题、变更维度和验收边界。
 - [复杂设计分层 SKILL（Instant 优先）](skills/complex-design-instant/SKILL.md)：多参考图、多页面、多状态、严格还原、复杂大屏及连续纠错时加载；把复杂任务拆成可验收阶段。
 - [图标原图色彩、脏黑描边和HTML可见主体居中专项](docs/COLOR_FIDELITY_HTML_ALIGNMENT.md)：新增CF0～CF7和CR-01～CR-12；[颜色与DOM视觉中心检查器](scripts/audit_color_layout.py)、[真实浏览器PNG Alpha与slot几何采集脚本](scripts/capture_ui_alignment.js)，防止“PNG很高清但色彩发灰/破败、CSS框居中但图形偏心”。
