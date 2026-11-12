@@ -64,6 +64,8 @@ Adobe官方可核验的操作说明：
 
 ## D. 可执行的分辨率/完整单元验收
 
+**本轮补充光晕与黑边标准**：独立业务符号可紧裁，但**3D底托、投影、外发光层不得按普通icon自动裁边/再居中**，必须保留原图锚点并用可编辑几何源重新输出；只有真实视觉单元重组后与认可原图逐ROI复合验证、并在白/暗/棋盘底人工检查预乘Alpha与黑边才算通过。详见[HG0～HG6](../../docs/VISUAL_UNIT_GLOW_REGRESSION.md)。
+
 对应辅助检查器：`scripts/audit_cutout_source_quality.py`，实际回归证据见[PS切图与完整视觉单元回归](../../docs/PS_CUTOUT_REGRESSION.md)。
 
 - 用 JSON 记录每项 `asset_path`、`role`、`visual_unit`、`layer_role`（`glyph/plinth/composite/map/standalone`）、`alignment_mode`（`tight/layer_anchor`）、`target_css_px`、`target_dpr`、`source_native_px` 和可选 `composite_preview`。导出完整图与独立源层必须保持同一个`visual_unit`。

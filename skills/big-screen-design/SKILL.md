@@ -59,6 +59,8 @@ description: UI设计师项目中数据大屏、驾驶舱、指挥中心、工�
 
 ## 10. 参考图与交付
 
+**底部业务五个立体单元专项（最新未通过项）**：用户明确以最后一张大屏原图为唯一金样。输出的底托绝不可歪斜、透视变形、裁掉青蓝光影或将黑底截图烘焙进透明PNG；合法的暗色实体侧壁又不能简单删黑。先读[HG0～HG6立体光晕/黑边专项](../../docs/VISUAL_UNIT_GLOW_REGRESSION.md)，以真实SVG/3D几何和单独发光层重建，检查每组glyph/plinth光晕完整、锚点不被通用icon紧裁破坏；使用[逐业务视觉单元同视口ROI复合校验](../../scripts/audit_visual_unit_composite.py)与原图比对，未跑真实HTML不得宣称已还原。
+
 **无PSD也必须继续高清切图**：002只有1672×941等扁平合成大屏、没有PSD/3D源层时，必须执行[无PSD高清重建SKILL](../source-free-hd-reconstruction/SKILL.md)：导航/业务符号用SVG可编辑矢量重绘，立体底托/地图使用程序化SVG/3D重建，输出满足实际CSS×DPR的独立PNG并在HTML同视口对照认可原图；不得继续放大43×48小截图、以缺PS为由停止或擅自改变造型配色。**重建的高清质量和与认可原图一致是两项独立验收。**
 
 **底部业务图标＋蓝色3D底托是完整视觉单元**：底托单独PNG只代表组件层，用户需要完整业务图标时必须提供完整复合PNG，或以glyph＋plinth＋完整组合预览及HTML实际渲染证明完全还原。遇到半个底托、低清、毛边必须启用[Photoshop级源层精修SKILL](../photoshop-grade-asset-extraction/SKILL.md)的R0～R7；优先PSD/PSB/矢量/3D源层重新导出，不得用小位图简单放大称高清。
