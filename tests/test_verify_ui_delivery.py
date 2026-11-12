@@ -224,5 +224,117 @@ class SemanticDeliveryTests(unittest.TestCase):
         self.assertTrue(any("invalid or unreadable PNG" in e for e in result["errors"]))
 
 
+    def enable_v11(self, strategy="image"):
+        self.manifest["schema_version"] = "1.1"
+        self.manifest["background_strategy"] = strategy
+        for item in self.manifest["assets"]:
+            item["source_kind"] = "layer_export"
+            item["reason_png"] = "original artwork requires independent image alpha"
+        if strategy == "css":
+            self.manifest["assets"] = [x for x in self.manifest["assets"] if x["role"] != "background"]
+            (self.root / "assets/backgrounds/bg.png").unlink()
+            (self.root / "css/style.css").write_text(
+                'body{background-color:#071821} nav button{cursor:pointer}', encoding="utf-8")
+        else:
+            self.manifest["required_asset_roles"] = ["background"]
+        self.write_manifest()
+
+    def add_component(self, policy="closed", clipped=False, source="layer_export"):
+        (self.root / "assets/components").mkdir(exist_ok=True)
+        comp = Image.new("RGBA", (24, 24), (0, 0, 0, 0))
+        box = (0, 0, 24, 24) if clipped else (3, 3, 21, 21)
+        for y in range(box[1], box[3]):
+            for x in range(box[0], box[2]):
+                comp.putpixel((x, y), (10, 170, 240, 255))
+        comp.save(self.root / "assets/components/platform.png")
+        (self.root / "index.html").write_text(
+            (self.root / "index.html").read_text(encoding="utf-8").replace(
+                "</body>", '<img src="assets/components/platform.png" alt=""></body>'
+            ), encoding="utf-8")
+        self.manifest["assets"].append({
+            "id": "platform", "role": "component", "path": "assets/components/platform.png",
+            "source_kind": source,
+            "reason_png": "complex perspective and physically layered lighting",
+            "edge_policy": policy
+        })
+        self.write_manifest()
+
+    def test_v11_css_background_without_png_passes(self):
+        self.enable_v11("css")
+        result = self.scan()
+        self.assertEqual(result["status"], "PASS", result["errors"])
+        self.assertEqual(result["background_strategy"], "css")
+
+    def test_v11_css_strategy_without_css_background_fails(self):
+        self.enable_v11("css")
+        (self.root / "css/style.css").write_text('nav{display:flex}', encoding="utf-8")
+        self.assertTrue(any("no background property" in e for e in self.scan()["errors"]))
+
+    def test_v11_css_strategy_with_extra_background_file_fails(self):
+        self.enable_v11("css")
+        Image.new("RGB", (32, 24), "#050505").save(self.root / "assets/backgrounds/excess.png")
+        self.assertTrue(any("unnecessary or undeclared PNG" in e for e in self.scan()["errors"]))
+
+    def test_v11_explicit_png_background_can_be_solid(self):
+        self.enable_v11("image")
+        result = self.scan()
+        self.assertEqual(result["status"], "PASS", result["errors"])
+
+    def test_v11_unrequested_solid_background_fails(self):
+        self.enable_v11("image")
+        self.manifest.pop("required_asset_roles")
+        self.write_manifest()
+        self.assertTrue(any("near-solid background image" in e for e in self.scan()["errors"]))
+
+    def test_v11_background_with_transparency_holes_fails(self):
+        self.enable_v11("image")
+        with Image.open(self.root / "assets/backgrounds/bg.png") as im:
+            img = im.convert("RGBA")
+        img.putpixel((4, 5), (0, 0, 0, 0))
+        img.save(self.root / "assets/backgrounds/bg.png")
+        self.assertTrue(any("transparent holes" in e for e in self.scan()["errors"]))
+
+    def test_v11_masked_background_fails(self):
+        self.enable_v11("image")
+        self.manifest["assets"][0]["source_kind"] = "masked"
+        self.write_manifest()
+        self.assertTrue(any("masked foreground screenshot" in e for e in self.scan()["errors"]))
+
+    def test_v11_unclipped_component_passes(self):
+        self.enable_v11("css")
+        self.add_component()
+        self.assertEqual(self.scan()["status"], "PASS", self.scan()["errors"])
+
+    def test_v11_clipped_component_fails_even_if_png_exists(self):
+        self.enable_v11("css")
+        self.add_component(clipped=True)
+        self.assertTrue(any("touches PNG canvas edge" in e for e in self.scan()["errors"]))
+
+    def test_v11_explicit_intentional_bleed_passes_geometry(self):
+        self.enable_v11("css")
+        self.add_component(policy="intentional_bleed", clipped=True)
+        self.assertEqual(self.scan()["status"], "PASS", self.scan()["errors"])
+
+    def test_v11_component_missing_edge_policy_fails(self):
+        self.enable_v11("css")
+        self.add_component()
+        self.manifest["assets"][-1].pop("edge_policy")
+        self.write_manifest()
+        self.assertTrue(any("needs edge_policy" in e for e in self.scan()["errors"]))
+
+    def test_v11_component_without_reason_fails(self):
+        self.enable_v11("css")
+        self.add_component()
+        self.manifest["assets"][-1]["reason_png"] = "because"
+        self.write_manifest()
+        self.assertTrue(any("needs specific reason_png" in e for e in self.scan()["errors"]))
+
+    def test_v11_required_background_role_cannot_be_removed(self):
+        self.enable_v11("css")
+        self.manifest["required_asset_roles"] = ["background"]
+        self.write_manifest()
+        self.assertTrue(any("explicitly required role not delivered" in e for e in self.scan()["errors"]))
+
+
 if __name__ == "__main__":
     unittest.main()
