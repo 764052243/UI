@@ -16,7 +16,7 @@ description: UI设计师001/002在用户要求切图、PNG图标/背景资源、
 - **整页视觉预览**：一个 `preview/full-page.png`，用于对照，不替代资源。
 - **PNG 独立图标**：每个图标/状态单独 `assets/icons/*.png`，**RGBA透明背景、紧贴图形、适当透明留白、无文字/导航面板/灰黑底块**。图标本身如包含发光/投影应保留真实半透明边缘，不能扣成硬边，也不能把背景黑色误带进来。
 - **背景图（仅确实需要PNG时）**：纯色/深色渐变/规则纹理、按钮底色、纯色圆盘等优先CSS，**无必要不切PNG**。用户明确要 PNG 背景或有不可替代的完整纹理才输出`assets/backgrounds/*.png`；必须是完整背景层与正确画布，不得半幅/纯黑替代复杂原底，不能包含文字/按钮/指标。无法恢复遮挡时从源层导出或标记重建不确定区。
-- **复杂视觉组件**：`assets/components/*.png`，仅用于不适合用 CSS/HTML 重现且用户授权保留位图的复合装饰/设备/地图组件；可以带自身边框/装饰，但不能整段截图包含多组本应可交互的图表、菜单与数据。
+- **复杂视觉组件**：`assets/components/*.png`，用于不适合用 CSS/HTML 等价复现的复合装饰/设备/地图组件。**原稿中特殊斜切角、四边明暗渐变、局部发光且构成一个整体的面板框也属于独立`ornamental_frame` PNG组件**，不可退化为HTML简单`border`；简单规则线条仍用CSS。任何组件不得直接截入本应是DOM的可交互文字、图表、菜单和数据。
 - **HTML+CSS+JS 页面**：`index.html`、`css/style.css`、`js/app.js`，**真正用 HTML DOM 实现标题、菜单文字、按钮、指标、图表容器、交互**，以相对路径引用真实 PNG 资源。不得用 `<img src="full-page.png">`、整页 `background-image`、canvas 单张截图或把多个矩形区域图拼起来冒充可运行页面。
 - **ZIP**：打包完整预览、独立图标/背景/必要组件、页面源文件和资源清单，文件结构可解压、路径有效、页面入口明确。用户只要求素材切图不要求 HTML 时按用户需求；但**一旦用户明确要求 HTML，缺 HTML 就是未完成**。
 
@@ -234,3 +234,17 @@ python scripts/verify_ui_delivery.py delivery --zip delivery.zip
 5. **自动检查通过仍不得宣称金样1:1或无毛边**：逐件100%/400%检查图标轮廓、材质、蓝/橙辉光渐变、透明边缘和HTML真实显示；用户再次指出色彩不一致时列为未通过项继续修复。不得通过扩大阈值或更换金样绕过。
 
 完整规则、示例采集与CR-01～CR-12见[图标色彩和HTML视觉居中专项](../../docs/COLOR_FIDELITY_HTML_ALIGNMENT.md)。**规范/工具改动并不等于具体HTML已运行、已修复或通过视觉验收**。
+
+## 14. V8.0｜整体装饰面板边框的PNG语义切图（FBG0～FBG6）
+
+**适用任何UI**：用户认可原图中，面板四边和拐角是**同一个装饰视觉单元**，存在局部明暗、斜切转角、镀铬高光、软发光、多重细线等细节。**这些框不是普通CSS `border`可以替代的**。应作为`assets/components/frame_*.png`完整透明PNG组件导出；纯色、规则单线边框仍可CSS实现，不要求所有面板都额外切PNG。
+
+- **FBG0 语义判定**：从原稿确定每个复杂面板的**整圈边框/标题装饰/光影**是否连成一体，登记`role=component`、`component_type=ornamental_frame`。不把左、右、上、下四条边随意独立拼合，也不把含数字、图表/标签的面板截图当边框。
+- **FBG1 取完整源层**：优先原PSD/SVG/3D框层导出，覆盖全部边角、上下左右暗亮变化、外光晕，留Alpha安全边；只有扁平位图时不能通过普通矩形裁切真正分离边框，需透明遮罩/矢量精修并标记`masked/reconstructed`来源。框内合法暗边不可一键删黑。
+- **FBG2 保真边框PNG**：一份PNG表示一个完整框，内部业务内容区透明，四侧、四角不得缺失、断裂、半截、重复亮线；背景底色/规则渐变可放CSS下层，文字和图表留在DOM或真实SVG/Canvas组件中，不烘焙。
+- **FBG3 HTML正确装配**：底色/背景层在下，**完整PNG框覆盖原位**，真实DOM文字/图表和交互在上；框层`pointer-events:none`，禁止加另一层CSS实线描边造成“双边框”。固定尺寸按原稿原比例展示；尺寸可变时，只有允许切分的框才使用PNG`border-image`/9-slice（**依然是PNG绘制，不是单色CSS border**），验证边沿亮暗接缝和四角不拉伸。
+- **FBG4 manifest新增字段**：新任务`schema_version=1.1`下，将用户明确需要的框ID登记在`required_frame_asset_ids`。对应`assets[]`中的组件必须有`component_type=ornamental_frame`、`frame_inner_rect=[left,top,right,bottom]`、`frame_render_strategy=fixed_overlay|nine_slice`，使用nine-slice时补`frame_slice_px=[top,right,bottom,left]`。现有`source_kind/reason_png/edge_policy`要求继续执行。
+- **FBG5 两层校验**：执行[scripts/verify_ui_delivery.py](../../scripts/verify_ui_delivery.py)先阻断缺PNG/未引用/中心黑底/缺边角/错误九宫参数，再将真实HTML在认可原图视口截图，逐面板整个框ROI比较**顶部亮边、左右暗线、转角、底边和柔光**。脚本通过不能证明形体、颜色、材质已1:1。
+- **FBG6 交付**：保留可编辑原框源、完整PNG、manifest、HTML/CSS/JS、浏览器复合截图及ZIP，明确框PNG在何处被引用；若缺源层导致仍无法精确分离，标为尚未高保真还原，不能把HTML`border`替代当作解决。
+
+完整通用规范、示例HTML和FBR-01～FBR-10回归见[装饰面板框整体PNG与HTML叠层验收](../../docs/ORNAMENTAL_FRAME_ASSET_QA.md)。**已确认设计只修改边框实现，不顺便改面板内容、颜色、尺寸、地图或其它无关组件。**

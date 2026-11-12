@@ -10,6 +10,7 @@
 - [局部精准修改与防需求倒退 SKILL](skills/precise-local-edit/SKILL.md)：跨001/002通用PLE0～PLE6最小变更契约；累计保留所有未通过属性，精准限定授权范围，验证目标确实改变及非目标冻结；[PNG微变更检查器](scripts/verify_micro_edit.py)支持旧/新位置变化、错误方向和越界修改检查。**具体页面/图标返工在对应设计师任务记录中处理，不写入公共SKILL。**
 - [共用需求理解 SKILL](skills/design-requirement-understanding/SKILL.md)：001/002 都需先定位用户指代、反馈问题、变更维度和验收边界。
 - [复杂设计分层 SKILL（Instant 优先）](skills/complex-design-instant/SKILL.md)：多参考图、多页面、多状态、严格还原、复杂大屏及连续纠错时加载；把复杂任务拆成可验收阶段。
+- [整体装饰边框PNG与HTML叠层门禁](docs/ORNAMENTAL_FRAME_ASSET_QA.md)：原稿中具有切角、明暗过渡、金属高光及四边连续结构的面板框应按完整视觉单元切`assets/components/frame_*.png`，不得直接用普通CSS `border`替代；仍保留CSS用于简单规则描边。[交付检查器](scripts/verify_ui_delivery.py)支持`ornamental_frame`透明内区、完整四边四角、资源引用和9-slice参数验证。
 - [图标原图色彩、脏黑描边和HTML可见主体居中专项](docs/COLOR_FIDELITY_HTML_ALIGNMENT.md)：新增CF0～CF7和CR-01～CR-12；[颜色与DOM视觉中心检查器](scripts/audit_color_layout.py)、[真实浏览器PNG Alpha与slot几何采集脚本](scripts/capture_ui_alignment.js)，防止“PNG很高清但色彩发灰/破败、CSS框居中但图形偏心”。
 - [立体底座光晕裁断与黑边专项验收](docs/VISUAL_UNIT_GLOW_REGRESSION.md)：针对底部业务完整视觉单元的真实角度、暗色实体侧壁、外发光安全边、错位和金样ROI差异；[图层复合与原图ROI检查器](scripts/audit_visual_unit_composite.py)需要同视口原图与隐藏目标图层的浏览器underlay，不再用全页RGB均值掩盖底部错误。
 - [无PSD高清切图与重建 SKILL](skills/source-free-hd-reconstruction/SKILL.md)：仅有合成图/低清截图、没有PSD/3D源层时**必须执行**，SVG精确重绘、程序化立体重建、从可编辑源导出高清PNG并与认可金样验收；**不能因为没有Photoshop停止制作**。[重建资源结构验证](scripts/verify_reconstruction_assets.py)、[无PSD高清重建12项回归](docs/NO_PSD_HD_RECONSTRUCTION_REGRESSION.md)。

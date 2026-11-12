@@ -259,6 +259,134 @@ class SemanticDeliveryTests(unittest.TestCase):
         })
         self.write_manifest()
 
+    def add_ornamental_frame(self):
+        self.enable_v11("css")
+        (self.root / "assets/components").mkdir(exist_ok=True)
+        frame = Image.new("RGBA", (64, 48), (0, 0, 0, 0))
+        # Independent four-sided glowing outline, intentionally transparent
+        # content area. The actual panel background and text remain CSS/DOM.
+        for y in range(3, 45):
+            for x in range(3, 61):
+                if x <= 5 or x >= 58 or y <= 5 or y >= 42:
+                    frame.putpixel((x, y), (20, 160, 220, 210))
+        frame.save(self.root / "assets/components/frame.png")
+        (self.root / "css/style.css").write_text(
+            (self.root / "css/style.css").read_text(encoding="utf-8") +
+            ' .panel::before{content:"";pointer-events:none;'
+            'position:absolute;inset:0;'
+            'background-image:url("../assets/components/frame.png")}',
+            encoding="utf-8"
+        )
+        self.manifest["assets"].append({
+            "id": "panel-frame", "role": "component",
+            "component_type": "ornamental_frame",
+            "path": "assets/components/frame.png",
+            "source_kind": "layer_export",
+            "reason_png": "nonuniform illuminated segmented panel outline and cut corners",
+            "edge_policy": "closed",
+            "frame_render_strategy": "fixed_overlay",
+            "frame_inner_rect": [8, 9, 56, 39]
+        })
+        self.manifest["required_frame_asset_ids"] = ["panel-frame"]
+        self.write_manifest()
+
+    def test_v11_real_frame_png_with_transparent_interior_passes(self):
+        self.add_ornamental_frame()
+        result = self.scan()
+        self.assertEqual(result["status"], "PASS", result["errors"])
+        frame = result["ornamental_frames"]["assets/components/frame.png"]
+        self.assertTrue(frame["all_sides_and_corners_present"])
+        self.assertTrue(frame["has_transparent_content_area"])
+        self.assertEqual(frame["inner_visible_alpha_fraction"], 0)
+
+    def test_v11_required_frame_missing_from_manifest_fails(self):
+        self.enable_v11("css")
+        self.manifest["required_frame_asset_ids"] = ["left-panel-frame"]
+        self.write_manifest()
+        self.assertTrue(any("required ornamental_frame PNG not delivered" in e
+                            for e in self.scan()["errors"]))
+
+    def test_v11_frame_cannot_be_renamed_generic_component_to_evade_gate(self):
+        self.add_ornamental_frame()
+        self.manifest["assets"][-1].pop("component_type")
+        self.write_manifest()
+        self.assertTrue(any("is not an ornamental_frame" in e for e in self.scan()["errors"]))
+
+    def test_v11_opaque_matting_inside_frame_fails(self):
+        self.add_ornamental_frame()
+        path = self.root / "assets/components/frame.png"
+        with Image.open(path) as img:
+            frame = img.convert("RGBA")
+        for y in range(14, 34):
+            for x in range(12, 52):
+                frame.putpixel((x, y), (1, 10, 15, 255))
+        frame.save(path)
+        self.assertTrue(any("opaque content-area matte" in e for e in self.scan()["errors"]))
+
+    def test_v11_frame_missing_right_edge_fails(self):
+        self.add_ornamental_frame()
+        path = self.root / "assets/components/frame.png"
+        with Image.open(path) as img:
+            frame = img.convert("RGBA")
+        for y in range(9, 39):
+            for x in range(56, 64):
+                frame.putpixel((x, y), (0, 0, 0, 0))
+        frame.save(path)
+        self.assertTrue(any("missing frame edge or corner" in e for e in self.scan()["errors"]))
+
+    def test_v11_frame_missing_lower_corner_fails(self):
+        self.add_ornamental_frame()
+        path = self.root / "assets/components/frame.png"
+        with Image.open(path) as img:
+            frame = img.convert("RGBA")
+        for y in range(39, 48):
+            for x in range(56, 64):
+                frame.putpixel((x, y), (0, 0, 0, 0))
+        frame.save(path)
+        self.assertTrue(any("missing frame edge or corner" in e for e in self.scan()["errors"]))
+
+    def test_v11_frame_inner_rect_mandatory(self):
+        self.add_ornamental_frame()
+        self.manifest["assets"][-1].pop("frame_inner_rect")
+        self.write_manifest()
+        self.assertTrue(any("requires frame_inner_rect" in e for e in self.scan()["errors"]))
+
+    def test_v11_frame_fake_tiny_hole_cannot_pass(self):
+        self.add_ornamental_frame()
+        self.manifest["assets"][-1]["frame_inner_rect"] = [30, 22, 34, 26]
+        self.write_manifest()
+        self.assertTrue(any("inner rect is too small" in e for e in self.scan()["errors"]))
+
+    def test_v11_frame_render_strategy_mandatory(self):
+        self.add_ornamental_frame()
+        self.manifest["assets"][-1].pop("frame_render_strategy")
+        self.write_manifest()
+        self.assertTrue(any("requires frame_render_strategy" in e for e in self.scan()["errors"]))
+
+    def test_v11_nine_slice_needs_valid_cut_geometry(self):
+        self.add_ornamental_frame()
+        self.manifest["assets"][-1]["frame_render_strategy"] = "nine_slice"
+        self.manifest["assets"][-1]["frame_slice_px"] = [12, 12, 12, 12]
+        self.write_manifest()
+        self.assertEqual(self.scan()["status"], "PASS", self.scan()["errors"])
+        self.manifest["assets"][-1]["frame_slice_px"] = [30, 33, 30, 33]
+        self.write_manifest()
+        self.assertTrue(any("nine_slice corners overlap" in e for e in self.scan()["errors"]))
+
+    def test_v11_unreferenced_frame_png_fails(self):
+        self.add_ornamental_frame()
+        css = self.root / "css/style.css"
+        css.write_text("body{background:#081922}", encoding="utf-8")
+        self.assertTrue(any("asset not referenced by HTML/CSS/JS" in e
+                            for e in self.scan()["errors"]))
+
+    def test_v11_duplicate_required_frame_ids_rejected(self):
+        self.add_ornamental_frame()
+        self.manifest["required_frame_asset_ids"].append("panel-frame")
+        self.write_manifest()
+        self.assertTrue(any("required_frame_asset_ids must be unique" in e
+                            for e in self.scan()["errors"]))
+
     def test_v11_css_background_without_png_passes(self):
         self.enable_v11("css")
         result = self.scan()

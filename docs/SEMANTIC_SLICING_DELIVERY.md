@@ -11,6 +11,7 @@
 | `background` | `assets/backgrounds/bg_dashboard.png` | 按目标画布全幅输出，背景能独立铺设；不得含原前景菜单、标题和图标 |
 | `icon` | `assets/icons/icon_nav_ops.png` | 单个视觉图形、真正 RGBA 透明背景，不能整条带字导航截图 |
 | `component` | `assets/components/deco_map.png` | 必要的复杂装饰/地图图层，业务数据与交互不能全部烘焙到图片 |
+| `component`（`ornamental_frame`） | `assets/components/frame_panel.png` | 四边连贯、明暗复杂的特殊面板装饰框，PNG内容区保持透明，叠放在独立底色与真正DOM之间；不能用普通CSS边框代替 |
 | `preview` | `preview/full-page.png` | 完整视觉对照稿，用于参考，不可作为HTML唯一可见主体 |
 
 用户要求 HTML 时必须同时交付 `index.html`、`css/style.css`、`js/app.js`、引用的独立 PNG 资源和完整 ZIP。纯视觉稿不是功能源码；静态 HTML 的可运行范围需明示。
@@ -54,6 +55,7 @@
 
 - `background_strategy: "css"`：CSS实际绘制简单底色/渐变，不需要任何背景 PNG；若偷偷保留冗余PNG，资源目录检查会失败。
 - `background_strategy: "image"`：只有不可替代图像背景或用户明确要求背景PNG时使用；此时必须交全画布、无透明洞的真正背景PNG。需要PNG但纯色背景的情况，应在`required_asset_roles`中记录用户明确的背景要求。
+- **整体装饰面板框专用**：复杂渐变明暗、切角、四边连贯的完整面板框不是CSS普通`border`。在1.1清单的`required_frame_asset_ids`登记确需PNG的每个面板框ID；对应资源填写`role:component`、`component_type:ornamental_frame`、`frame_inner_rect:[x0,y0,x1,y1]`、`frame_render_strategy:fixed_overlay|nine_slice`。9-slice需补`frame_slice_px:[top,right,bottom,left]`。内部文字与图表保持DOM，原版四角和暗亮框线作为一份透明PNG合成，详见[FBG0～FBG6整体边框验收](ORNAMENTAL_FRAME_ASSET_QA.md)。
 - `source_kind`：每张PNG记录`layer_export / masked / reconstructed`；背景若仅从合成截图蒙版抠取不能直接签收；仍需源层或高保真重建与人工核对。
 - `reason_png`：每张PNG需要具体说明为什么不能稳定用DOM/CSS复现；不能按素材数量交差。复杂组件还需`edge_policy: "closed"`或有金样依据的`"intentional_bleed"`。
 - 需要交PNG背景的用户明确要求应写进`required_asset_roles: ["background"]`，不得因为CSS方案方便而遗漏。
