@@ -169,6 +169,9 @@ def render_review_sheet(source, output_path, use_normalized=False, normalized_di
     files = [root] if root.is_file() else sorted(root.rglob('*.png'))
     if not files:
         raise ValueError('no icons to preview')
+    source_directory = root if root.is_dir() else root.parent
+    if output_path.resolve() == source_directory.resolve() or source_directory.resolve() in output_path.resolve().parents:
+        raise ValueError('contact sheet must be outside input icon directory')
     if output_path.resolve() in [p.resolve() for p in files]:
         raise ValueError('contact sheet cannot overwrite an input icon')
     width, row_h = 540, 160
