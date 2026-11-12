@@ -329,6 +329,25 @@ class SemanticDeliveryTests(unittest.TestCase):
         self.write_manifest()
         self.assertTrue(any("needs specific reason_png" in e for e in self.scan()["errors"]))
 
+    def test_v11_duplicate_picture_assets_are_rejected(self):
+        self.enable_v11("css")
+        self.add_component()
+        clone = self.root / "assets/components/platform-duplicate.png"
+        clone.write_bytes((self.root / "assets/components/platform.png").read_bytes())
+        (self.root / "index.html").write_text(
+            (self.root / "index.html").read_text(encoding="utf-8").replace(
+                "</body>", '<img src="assets/components/platform-duplicate.png" alt=""></body>'
+            ), encoding="utf-8")
+        self.manifest["assets"].append({
+            "id": "platform-duplicate", "role": "component",
+            "path": "assets/components/platform-duplicate.png",
+            "source_kind": "layer_export",
+            "reason_png": "duplicated base to test unwanted asset export",
+            "edge_policy": "closed"
+        })
+        self.write_manifest()
+        self.assertTrue(any("duplicated PNG content" in e for e in self.scan()["errors"]))
+
     def test_v11_required_background_role_cannot_be_removed(self):
         self.enable_v11("css")
         self.manifest["required_asset_roles"] = ["background"]
