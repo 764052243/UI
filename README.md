@@ -8,6 +8,7 @@
 - [共同设计公约 V2.0](UI_DESIGN_CONVENTION.md)：跨大屏与业务系统的基线、参考图、配色、验收与归档规则。
 - [共用需求理解 SKILL](skills/design-requirement-understanding/SKILL.md)：001/002 都需先定位用户指代、反馈问题、变更维度和验收边界。
 - [复杂设计分层 SKILL（Instant 优先）](skills/complex-design-instant/SKILL.md)：多参考图、多页面、多状态、严格还原、复杂大屏及连续纠错时加载；把复杂任务拆成可验收阶段。
+- [无PSD高清切图与重建 SKILL](skills/source-free-hd-reconstruction/SKILL.md)：仅有合成图/低清截图、没有PSD/3D源层时**必须执行**，SVG精确重绘、程序化立体重建、从可编辑源导出高清PNG并与认可金样验收；**不能因为没有Photoshop停止制作**。[重建资源结构验证](scripts/verify_reconstruction_assets.py)。
 - [Photoshop级精细切图与完整视觉单元 SKILL](skills/photoshop-grade-asset-extraction/SKILL.md)：用户指出图形只剩半截、底托分离后缺上方图标、PNG不清晰/毛边时强制加载；优先PSD/PSB/矢量/3D源层非破坏导出，不能把小图插值放大冒充高清。配套[原生像素与组合完整性检查器](scripts/audit_cutout_source_quality.py)、[真实底托测量与14项回归](docs/PS_CUTOUT_REGRESSION.md)。**此SKILL是工作流程，不等于已连接Photoshop编辑器。**
 - [语义切图、PNG资源与HTML交付 SKILL](skills/semantic-asset-export/SKILL.md)：要求切图、透明图标、独立背景、HTML/ZIP时必读；禁止矩形截图冒充素材。[交付契约](docs/SEMANTIC_SLICING_DELIVERY.md)、[资产是否需要PNG、背景与毛边专项](docs/ASSET_ROLE_AND_EDGE_QA.md)、[PNG边缘诊断与三底色预览](scripts/audit_asset_edges.py)、[SL回归案例](docs/SEMANTIC_SLICING_REGRESSION.md)、[逐图标紧裁/居中标准](docs/ICON_ASSET_ALIGNMENT.md)、[非破坏性图标检查与归一化工具](scripts/normalize_ui_icons.py)、[金样视觉一致性与RV回归](docs/ASSET_FIDELITY_REGRESSION.md)、[静态验证器](scripts/verify_ui_delivery.py)、[实际HTML截图差异检测](scripts/verify_visual_reconstruction.py)。
 - [高清与锁定区域保护 SKILL](skills/visual-fidelity-lock/SKILL.md)：**凡交付设计图或编辑已认可版本都必须执行**，核对真实清晰度、正确画布及无关设计冻结；[回归案例](docs/VISUAL_FIDELITY_REGRESSION.md)与[只读校验脚本](scripts/verify_ui_artifact.py)提供实际检测。
