@@ -164,10 +164,13 @@ def render_review_sheet(source, output_path, use_normalized=False, normalized_di
     Three identical PNG previews on checkerboard/light/dark show black/white
     matte, alpha fringing and visual imbalance that file metadata misses.
     """
-    root = normalized_dir if use_normalized else source
-    if root is None:
-        raise ValueError('normalized directory not available')
-    files = [root] if root.is_file() else sorted(root.rglob('*.png'))
+    root = normalized_dir if use_normalized and normalized_dir is not None else source
+    files = ([root] if root.is_file() else sorted(root.rglob('*.png'))) if root.exists() else []
+    if not files and use_normalized:
+        # If every input was rejected (e.g. black background contamination),
+        # render the original failures so the reviewer can see the problem.
+        root = source
+        files = [root] if root.is_file() else sorted(root.rglob('*.png'))
     if not files:
         raise ValueError('no icons to preview')
     if output_path.resolve() in [p.resolve() for p in files]:
