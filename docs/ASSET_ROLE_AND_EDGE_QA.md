@@ -101,6 +101,8 @@
 2. 运行 `python scripts/audit_asset_edges.py delivery/asset-manifest.json --root delivery --contact-sheet working/asset-edges.png`，生成组件边界、Alpha和可疑空白/纯色背景诊断及三底色预览（不会修改原PNG），用金样逐件复核。
 3. **脚本PASS只说明它能检测的硬约束通过**；不会知道中国地图哪个省缺边、3D平台哪个透视缺失、边缘是否完全美观。真正高保真仍依赖原件、分层源图、同画布真实HTML与用户验收。
 
+**最新专项纠错**：底部3D底托的黑色侧壁可能是**合法实体内容**，不能为去毛边一键删黑；真正黑底污染应从可编辑几何、独立真Alpha重导。自动Alpha紧裁适用于独立symbol，不适用于需要保留`layer_anchor`的辉光/底托。实际CSS/HTML同坐标合成结果需按[HG0～HG6与ROI验证工具](VISUAL_UNIT_GLOW_REGRESSION.md)检查倾角、缺半层、光效裁断，不能仅凭PNG边框/静态RGB均值通过。
+
 ## 七、回归案例（AR-01～AR-14）
 
 | 案例 | 错误表现 | 通过条件 |
