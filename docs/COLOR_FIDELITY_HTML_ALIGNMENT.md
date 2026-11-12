@@ -39,7 +39,7 @@
       {id:"status-availability",slot:"#availability .icon-slot",image:"#availability .icon-slot img"}
     ]);
 
-将返回的真实JSON保存为 delivery/reports/browser-layout.json。这里的选择器只是例子，002必须从**真实现有HTML**选择可见图标及其视觉槽；不允许为了方便检测新建一个虚假外层槽。
+**截图必须以CSS像素尺度导出**（例如Playwright screenshot 的 scale=css），使浏览器 window.innerWidth/innerHeight 和实际PNG画布像素宽高一致。不得拿设备2倍像素截图与CSS像素DOM坐标直接比较；检查器将拒绝不同视口。将返回的真实JSON保存为 delivery/reports/browser-layout.json。这里的选择器只是例子，002必须从**真实现有HTML**选择可见图标及其视觉槽；不允许为了方便检测新建一个虚假外层槽。
 
 ### 检查配置结构（值均为示意，不是本轮实测位置）
 
