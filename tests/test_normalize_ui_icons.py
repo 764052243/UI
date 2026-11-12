@@ -92,6 +92,67 @@ class IconTrimTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no PNG'):
             lib.run(empty)
 
+    def test_transparent_png_with_baked_black_rectangle_is_rejected(self):
+        icon = Image.new('RGBA', (48, 48), (0, 0, 0, 0))
+        for y in range(2, 46):
+            for x in range(2, 46):
+                icon.putpixel((x, y), (4, 12, 17, 255))
+        for y in range(18, 28):
+            for x in range(18, 30):
+                icon.putpixel((x, y), (0, 225, 255, 255))
+        diagnosis = lib.analyze(icon)
+        self.assertTrue(diagnosis['geometrically_centered'])
+        self.assertTrue(diagnosis['tightly_trimmed'])
+        self.assertFalse(diagnosis['pass'])
+        self.assertEqual(diagnosis['suspected_baked_background']['matte_kind'], 'dark')
+        with self.assertRaisesRegex(ValueError, 'suspected opaque rectangular background'):
+            lib.normalize(icon)
+
+    def test_transparent_png_with_baked_white_rectangle_is_rejected(self):
+        icon = Image.new('RGBA', (48, 48), (0, 0, 0, 0))
+        for y in range(2, 46):
+            for x in range(2, 46):
+                icon.putpixel((x, y), (250, 250, 250, 255))
+        for y in range(18, 28):
+            for x in range(18, 30):
+                icon.putpixel((x, y), (0, 225, 255, 255))
+        self.assertEqual(lib.analyze(icon)['suspected_baked_background']['matte_kind'], 'light')
+
+    def test_glow_cannot_hide_baked_black_background(self):
+        icon = Image.new('RGBA', (48, 48), (0, 0, 0, 0))
+        for y in range(6, 42):
+            for x in range(6, 42):
+                icon.putpixel((x, y), (5, 11, 17, 255))
+        for y in range(2, 46):
+            for x in range(2, 46):
+                if icon.getpixel((x, y))[3] == 0:
+                    icon.putpixel((x, y), (0, 180, 255, 1))
+        self.assertTrue(lib.analyze(icon)['suspected_baked_background']['suspected'])
+
+    def test_legitimate_dark_round_pedestal_not_auto_removed(self):
+        icon = Image.new('RGBA', (48, 48), (0, 0, 0, 0))
+        for y in range(3, 45):
+            for x in range(3, 45):
+                if (x - 24) ** 2 + (y - 24) ** 2 <= 21 ** 2:
+                    icon.putpixel((x, y), (4, 19, 24, 255))
+        for y in range(15, 26):
+            for x in range(18, 30):
+                icon.putpixel((x, y), (0, 240, 250, 255))
+        self.assertFalse(lib.analyze(icon)['suspected_baked_background']['suspected'])
+
+    def test_contact_sheet_shows_three_backgrounds_and_preserves_source(self):
+        raw = self.path.read_bytes()
+        sheet_path = self.root / 'contact-sheet.png'
+        path = lib.render_review_sheet(self.source, sheet_path)
+        self.assertEqual(path, str(sheet_path))
+        with Image.open(sheet_path) as image:
+            self.assertEqual(image.size, (540, 190))
+        self.assertEqual(self.path.read_bytes(), raw)
+
+    def test_contact_sheet_does_not_overwrite_original_icon(self):
+        with self.assertRaisesRegex(ValueError, 'cannot overwrite'):
+            lib.render_review_sheet(self.path, self.path)
+
     def test_invalid_padding_rejected(self):
         with self.assertRaisesRegex(ValueError, 'padding'):
             lib.normalize(self.icon, -1)
