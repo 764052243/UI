@@ -7,6 +7,8 @@ description: UI设计师001/002从已认可设计中提取高清透明PNG、分�
 
 > **作用边界**：这是供实际可以使用 Photoshop、Affinity Photo、Photopea、Figma、Illustrator、Blender 或等效源文件编辑器的设计师执行的**专业工作流 SKILL**，不是已安装的 Adobe Photoshop 远程操作插件。若当前执行环境无PSD源层或无法启动编辑器，必须标记“原始图层未获得/PS未实际执行”，不得写“已PS精修”或把模糊截图放大冒充高清。
 >
+> **无PSD时的正式替代路线（强制）**：没有PSD/PSB/原始3D或编辑器**不等于不能制作高清PNG**。若只剩合成截图，立即转到[无PSD高清重建SKILL](../source-free-hd-reconstruction/SKILL.md)：SVG几何重绘、程序化3D/光影重建、必要时AI候选＋人工精修，导出实际足够像素的PNG并对认可金样校验。不得只要求用户提供PSD后停止，也不得把重建谎称无损提取原层。Photoshop只是可选实现路径，不是交付前置依赖。
+>
 > **触发**：用户指出“只有一半、缺层、PNG不完整、不高清、毛边、锯齿、黑白脏边、底托与图标分开后少一半、图片未居中”，或需要从原效果图高清导出独立资源。必须先读取 [语义切图 SKILL](../semantic-asset-export/SKILL.md)、[资产角色与边缘规范](../../docs/ASSET_ROLE_AND_EDGE_QA.md) 与本 SKILL。认可原稿是唯一视觉金样，不因精修重设计。
 
 ## A. 第一优先级：识别“完整视觉单元”，不能过度拆分
