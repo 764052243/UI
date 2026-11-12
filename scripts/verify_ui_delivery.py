@@ -6,6 +6,7 @@ asset references, and optional ZIP integrity. Does NOT prove visual fidelity,
 real interactivity, or user download success. Requires Pillow.
 """
 import argparse
+import hashlib
 import json
 import math
 import re
@@ -174,6 +175,7 @@ def scan(root, zip_path=None):
         if not isinstance(assets, list) or not assets:
             raise ValueError("assets must be a nonempty list")
         roles, asset_paths, asset_ids = [], set(), set()
+        seen_pixels = {}
         declared = []
         for i, asset in enumerate(assets):
             if not isinstance(asset, dict):
@@ -276,6 +278,15 @@ def scan(root, zip_path=None):
                             errors.append("icon has excessive transparent whitespace: " + p)
                         if not centered:
                             errors.append("icon visible bounds are off-center: " + p)
+                if strict_roles:
+                    with Image.open(file) as raw:
+                        rgba = raw.convert("RGBA")
+                        fingerprint = (rgba.size, hashlib.sha256(rgba.tobytes()).hexdigest())
+                    if fingerprint in seen_pixels:
+                        errors.append("duplicated PNG content; reuse one shared asset: " + p +
+                                      " (same as " + seen_pixels[fingerprint] + ")")
+                    else:
+                        seen_pixels[fingerprint] = p
                 asset_paths.add(p)
                 declared.append((role, p, list(size)))
                 report["assets_checked"] += 1
