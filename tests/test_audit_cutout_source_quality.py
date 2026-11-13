@@ -49,6 +49,90 @@ class CutoutSourceQualityTests(unittest.TestCase):
     def check(self):
         return audit.check(self.root, self.payload)
 
+    def setup_lossless_standalone(self):
+        self.source = self.root / "assets/original-icon.png"
+        im = Image.new("RGBA", (220, 160), (0, 0, 0, 0))
+        # Intentionally asymmetric and multi-part, making half-crops observable.
+        for x in range(58, 171):
+            for y in range(16, 108):
+                if (x + y) % 5 != 0:
+                    im.putpixel((x, y), ((3*x)%255, (2*y)%255, 120, 255))
+        for y in range(28, 55):
+            for x in range(170, 195):
+                im.putpixel((x, y), (4, 210, 250, 120))
+        im.save(self.source)
+        im.crop((52, 10, 200, 115)).save(self.glyph)
+        row = self.asset("assets/glyph.png", "standalone", "tight")
+        row["integrity_mode"] = "lossless_isolated_layer"
+        row["source_layer_path"] = "assets/original-icon.png"
+        # Source and export are both raster images, but must not be stretched.
+        row["target_css_px"] = [70, 50]
+        row["target_dpr"] = 1
+        self.payload["assets"] = [row]
+
+    def test_exact_isolated_layer_crop_passes_without_resampling(self):
+        self.setup_lossless_standalone()
+        result = self.check()
+        self.assertEqual(result["status"], "PASS", result["failures"])
+        proof = result["assets"][0]["lossless_integrity"]
+        self.assertEqual(proof["different_visible_pixels"], 0)
+        self.assertTrue(proof["pass"])
+        self.assertFalse(result["quality_verified"])
+
+    def test_only_half_icon_cropped_fails_even_if_dims_metadata_look_good(self):
+        self.setup_lossless_standalone()
+        with Image.open(self.glyph) as im:
+            cropped = im.convert("RGBA").crop((0, 0, 105, im.height))
+        cropped.save(self.glyph)
+        result = self.check()
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("lossless isolated icon integrity failed" in
+                            item["message"] for item in result["failures"]))
+
+    def test_doubly_resampled_icon_fails_exact_source_integrity(self):
+        self.setup_lossless_standalone()
+        with Image.open(self.glyph) as im:
+            pix = im.convert("RGBA")
+        # Simulate thumbnail/resize chain while keeping final pixel dimensions.
+        reduced = pix.resize((60, 43), Image.Resampling.BILINEAR)
+        reduced.resize(pix.size, Image.Resampling.BILINEAR).save(self.glyph)
+        result = self.check()
+        self.assertEqual(result["status"], "FAIL")
+        self.assertTrue(any("lossless isolated icon integrity failed" in
+                            item["message"] for item in result["failures"]))
+
+    def test_recolored_icon_fails_exact_integrity(self):
+        self.setup_lossless_standalone()
+        with Image.open(self.glyph) as im:
+            img = im.convert("RGBA")
+        img.putpixel((50, 30), (255, 0, 0, 255))
+        img.save(self.glyph)
+        self.assertEqual(self.check()["status"], "FAIL")
+
+    def test_opaque_screenshot_cannot_claim_isolated_layer(self):
+        self.setup_lossless_standalone()
+        Image.new("RGB", (220, 160), "white").save(self.source)
+        with self.assertRaisesRegex(ValueError, "isolated transparent RGBA layer"):
+            self.check()
+
+    def test_source_reference_mandatory_in_lossless_mode(self):
+        self.setup_lossless_standalone()
+        self.payload["assets"][0].pop("source_layer_path")
+        with self.assertRaisesRegex(ValueError, "source_layer_path"):
+            self.check()
+
+    def test_lossless_mode_cannot_be_claimed_for_masked_flat_screenshot(self):
+        self.setup_lossless_standalone()
+        self.payload["assets"][0]["source_kind"] = "masked"
+        with self.assertRaisesRegex(ValueError, "requires source_kind layer_export"):
+            self.check()
+
+    def test_existing_declared_source_metadata_only_stays_compatible(self):
+        result = self.check()
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["assets"][0]["integrity_mode"], "not_claimed")
+        self.assertIsNone(result["assets"][0]["lossless_integrity"])
+
     def test_complete_group_with_source_pixels_passes_numeric_gates(self):
         result = self.check()
         self.assertEqual(result["status"], "PASS", result["failures"])
