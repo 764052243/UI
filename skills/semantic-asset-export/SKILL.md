@@ -241,7 +241,7 @@ python scripts/verify_ui_delivery.py delivery --zip delivery.zip
 
 - **FBG0 语义判定**：从原稿确定每个复杂面板的**整圈边框/标题装饰/光影**是否连成一体，登记`role=component`、`component_type=ornamental_frame`。不把左、右、上、下四条边随意独立拼合，也不把含数字、图表/标签的面板截图当边框。
 - **FBG1 取完整源层**：优先原PSD/SVG/3D框层导出，覆盖全部边角、上下左右暗亮变化、外光晕，留Alpha安全边；只有扁平位图时不能通过普通矩形裁切真正分离边框，需透明遮罩/矢量精修并标记`masked/reconstructed`来源。框内合法暗边不可一键删黑。
-- **FBG2 保真边框PNG**：一份PNG表示一个完整框，内部业务内容区透明，四侧、四角不得缺失、断裂、半截、重复亮线；背景底色/规则渐变可放CSS下层，文字和图表留在DOM或真实SVG/Canvas组件中，不烘焙。
+- **FBG2 保真边框PNG：纯框、零背景、零图标**。一份`assets/components/frame_*.png`只表示**完整外圈边线、拐角及其真实光晕**，窄边带以外的Alpha必须为0；不能包含面板底色、顶部实心背景、半透明内部底纹、任何标题/导航/箭头图标、数据或文字。**与面板关联的每个图标另切独立透明`assets/icons/icon_*.png`**，以HTML原位叠加，二者不能混到同一PNG；四侧四角与原稿暗亮结构均须完整。
 - **FBG3 HTML正确装配**：底色/背景层在下，**完整PNG框覆盖原位**，真实DOM文字/图表和交互在上；框层`pointer-events:none`，禁止加另一层CSS实线描边造成“双边框”。固定尺寸按原稿原比例展示；尺寸可变时，只有允许切分的框才使用PNG`border-image`/9-slice（**依然是PNG绘制，不是单色CSS border**），验证边沿亮暗接缝和四角不拉伸。
 - **FBG4 manifest新增字段**：新任务`schema_version=1.1`下，将用户明确需要的框ID登记在`required_frame_asset_ids`。对应`assets[]`中的组件必须有`component_type=ornamental_frame`、`frame_inner_rect=[left,top,right,bottom]`、`frame_render_strategy=fixed_overlay|nine_slice`，使用nine-slice时补`frame_slice_px=[top,right,bottom,left]`。现有`source_kind/reason_png/edge_policy`要求继续执行。
 - **FBG5 两层校验**：执行[scripts/verify_ui_delivery.py](../../scripts/verify_ui_delivery.py)先阻断缺PNG/未引用/中心黑底/缺边角/错误九宫参数，再将真实HTML在认可原图视口截图，逐面板整个框ROI比较**顶部亮边、左右暗线、转角、底边和柔光**。脚本通过不能证明形体、颜色、材质已1:1。
