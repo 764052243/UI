@@ -404,7 +404,7 @@ class SemanticDeliveryTests(unittest.TestCase):
             for x in range(12, 52):
                 frame.putpixel((x, y), (1, 10, 15, 255))
         frame.save(path)
-        self.assertTrue(any("opaque content-area matte" in e for e in self.scan()["errors"]))
+        self.assertTrue(any("must be pure border without panel background" in e for e in self.scan()["errors"]))
 
     def test_v11_frame_missing_right_edge_fails(self):
         self.add_ornamental_frame()
