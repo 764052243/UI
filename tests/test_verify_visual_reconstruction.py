@@ -47,6 +47,85 @@ class VisualReconstructionTests(unittest.TestCase):
     def run_case(self):
         return module.run(self.ref, self.actual, self.plan)
 
+    def setup_header_glow_roi(self):
+        """A deliberately narrow synthetic header light strip, not full UI."""
+        with Image.open(self.ref) as im:
+            gold = im.convert('RGB')
+        for y in range(2, 5):
+            for x in range(2, 26):
+                gold.putpixel((x, y), (210, 220, 230))
+        gold.save(self.ref)
+        gold.save(self.actual)
+        self.spec['regions'][0]['thresholds'] = {
+            'max_changed_fraction': .50,
+            'max_mean_rgb_difference': 50,
+            'light_preservation': {
+                'reference_min_luminance': 130,
+                'min_reference_highlight_pixels': 60,
+                'min_preserved_luminance_ratio': .90,
+                'max_lost_highlight_fraction': .20,
+                'drop_tolerance': 8
+            }
+        }
+        self.spec['whole_canvas']['max_changed_fraction'] = .50
+        self.write_plan()
+
+    def test_retained_header_glow_passes_opt_in_light_gate(self):
+        self.setup_header_glow_roi()
+        result = self.run_case()
+        self.assertEqual(result['status'], 'PASS')
+        light = result['regions'][0]['light_preservation']
+        self.assertEqual(light['reference_highlight_pixels'], 72)
+        self.assertEqual(light['lost_highlight_fraction'], 0)
+
+    def test_dimmed_header_glow_fails_even_if_rgb_average_passes(self):
+        self.setup_header_glow_roi()
+        self.alter((2, 2, 26, 5), (150, 160, 170))
+        result = self.run_case()
+        self.assertTrue(result['full_canvas']['pass'], result)
+        roi = result['regions'][0]
+        self.assertLess(roi['mean_rgb_difference'], roi['max_mean_rgb_difference'])
+        self.assertFalse(roi['light_preservation']['pass'])
+        self.assertGreater(roi['light_preservation']['lost_highlight_fraction'], .9)
+        self.assertEqual(result['status'], 'FAIL')
+
+    def test_small_local_highlight_change_within_frozen_tolerance_passes(self):
+        self.setup_header_glow_roi()
+        self.alter((2, 2, 4, 3), (185, 195, 205))
+        self.assertEqual(self.run_case()['status'], 'PASS')
+
+    def test_light_gate_rejects_roi_with_no_valid_reference_highlights(self):
+        self.setup_header_glow_roi()
+        self.spec['regions'][1]['thresholds']['light_preservation'] = {
+            'reference_min_luminance': 240,
+            'min_reference_highlight_pixels': 1,
+            'min_preserved_luminance_ratio': .85,
+            'max_lost_highlight_fraction': .20
+        }
+        self.write_plan()
+        result = self.run_case()
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertEqual(result['regions'][1]['light_preservation']['reference_highlight_pixels'], 0)
+
+    def test_light_gate_rejects_relaxed_or_invalid_config(self):
+        self.setup_header_glow_roi()
+        self.spec['regions'][0]['thresholds']['light_preservation']['reference_min_luminance'] = 0
+        self.write_plan()
+        with self.assertRaisesRegex(ValueError, 'reference_min_luminance'):
+            self.run_case()
+        self.spec['regions'][0]['thresholds']['light_preservation']['reference_min_luminance'] = 130
+        self.spec['regions'][0]['thresholds']['light_preservation']['min_preserved_luminance_ratio'] = 1.1
+        self.write_plan()
+        with self.assertRaisesRegex(ValueError, 'min_preserved_luminance_ratio'):
+            self.run_case()
+
+    def test_light_gate_is_optional_for_existing_v1_plan(self):
+        self.setup_header_glow_roi()
+        self.spec['regions'][0]['thresholds'].pop('light_preservation')
+        self.write_plan()
+        self.alter((2, 2, 26, 5), (150, 160, 170))
+        self.assertEqual(self.run_case()['status'], 'PASS')
+
     def test_identical_reference_passes(self):
         r = self.run_case()
         self.assertEqual(r['status'], 'PASS')
