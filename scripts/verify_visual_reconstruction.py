@@ -37,6 +37,72 @@ def valid_thresholds(node, tag):
     return float(fraction), float(mean), tolerance
 
 
+
+def validate_light_preservation(cfg):
+    """Optional focused ROI gate: detect highlights/bevel/glow dimmed in HTML.
+
+    RGB pixel diffs remain the primary test. This only checks that pixels
+    designated bright in the approved image are not lost or uniformly darkened.
+    Regions must be preselected to EXCLUDE text, icons, charts and changing data.
+    """
+    if not isinstance(cfg, dict):
+        raise ValueError('light_preservation must be an object')
+    threshold = cfg.get('reference_min_luminance')
+    min_count = cfg.get('min_reference_highlight_pixels')
+    minimum_ratio = cfg.get('min_preserved_luminance_ratio')
+    max_lost = cfg.get('max_lost_highlight_fraction')
+    tolerance = cfg.get('drop_tolerance', 4)
+    if type(threshold) is not int or not 1 <= threshold <= 254:
+        raise ValueError('light_preservation.reference_min_luminance must be integer 1..254')
+    if type(min_count) is not int or min_count <= 0:
+        raise ValueError('light_preservation.min_reference_highlight_pixels must be positive integer')
+    if (type(minimum_ratio) not in (float, int) or
+            not 0 <= minimum_ratio <= 1):
+        raise ValueError('light_preservation.min_preserved_luminance_ratio must be in [0,1]')
+    if (type(max_lost) not in (float, int) or
+            not 0 <= max_lost <= 1):
+        raise ValueError('light_preservation.max_lost_highlight_fraction must be in [0,1]')
+    if type(tolerance) is not int or not 0 <= tolerance <= 255:
+        raise ValueError('light_preservation.drop_tolerance must be integer 0..255')
+    return threshold, min_count, float(minimum_ratio), float(max_lost), tolerance
+
+
+def measure_light_preservation(reference, actual, cfg):
+    threshold, min_count, min_ratio, max_lost, tol = validate_light_preservation(cfg)
+    if reference.size != actual.size:
+        raise ValueError('light preservation requires same-size ROI screenshots')
+    ref_gray = reference.convert('RGB').convert('L')
+    actual_gray = actual.convert('RGB').convert('L')
+    count = 0
+    ref_brightness = 0
+    actual_brightness = 0
+    lost_count = 0
+    for ref_l, cand_l in zip(ref_gray.getdata(), actual_gray.getdata()):
+        if ref_l < threshold:
+            continue
+        count += 1
+        ref_brightness += ref_l
+        actual_brightness += cand_l
+        if cand_l + tol < ref_l:
+            lost_count += 1
+    ratio = actual_brightness / ref_brightness if ref_brightness else 0.0
+    lost_fraction = lost_count / count if count else 1.0
+    passed = count >= min_count and ratio >= min_ratio and lost_fraction <= max_lost
+    return {
+        'pass': passed,
+        'reference_highlight_pixels': count,
+        'min_reference_highlight_pixels': min_count,
+        'mean_luminance_preservation_ratio': round(ratio, 4),
+        'min_preserved_luminance_ratio': min_ratio,
+        'lost_highlight_fraction': round(lost_fraction, 6),
+        'max_lost_highlight_fraction': max_lost,
+        'reference_min_luminance': threshold,
+        'drop_tolerance': tol,
+        'warning': ('Highlight protection is a localized diagnostic; it cannot identify exact glow '
+                    'layers, color shifts, blur radius, opacity or 3D materials by itself.')
+    }
+
+
 def measure(reference, actual, cfg):
     fraction_limit, mean_limit, tol = valid_thresholds(cfg, 'thresholds')
     if reference.size != actual.size:
@@ -53,7 +119,7 @@ def measure(reference, actual, cfg):
     edge_actual = actual.convert('RGB').convert('L').filter(ImageFilter.FIND_EDGES)
     edge_diff = ImageChops.difference(edge_ref, edge_actual)
     edge_mean = ImageStat.Stat(edge_diff).mean[0]
-    return {
+    result = {
         'changed_fraction': round(fraction, 6),
         'mean_rgb_difference': round(mean, 4),
         'edge_mean_difference_diagnostic_only': round(edge_mean, 4),
@@ -62,6 +128,12 @@ def measure(reference, actual, cfg):
         'max_mean_rgb_difference': mean_limit,
         'pass': fraction <= fraction_limit and mean <= mean_limit,
     }
+    # Legacy plans remain valid; focused light verification is opt-in only.
+    if 'light_preservation' in cfg:
+        result['light_preservation'] = measure_light_preservation(
+            reference, actual, cfg['light_preservation'])
+        result['pass'] = result['pass'] and result['light_preservation']['pass']
+    return result
 
 
 def run(reference_path, actual_path, plan_path):
@@ -72,7 +144,7 @@ def run(reference_path, actual_path, plan_path):
         'all_regions_pass': False, 'manual_visual_review_required': True,
         'browser_interaction_verified': False,
         'warnings': [
-            'Pixel metrics cannot certify semantic icon extraction, clean background, text correctness, glow, or UX.',
+            'Pixel metrics cannot certify semantic icon extraction, clean background, text correctness, layered glow, or UX.',
             'Plan thresholds must be fixed against the approved baseline before the candidate is made.',
             'User review of actual rendered PNG/HTML is still required.'
         ], 'regions': [],
