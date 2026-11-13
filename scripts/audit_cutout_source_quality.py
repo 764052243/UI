@@ -54,6 +54,40 @@ def examine_png(path):
             "has_partial_alpha": sum(rgba.getchannel("A").histogram()[1:255]) > 0}
 
 
+def verify_lossless_isolated_layer(source_path, cutout_path):
+    """Verify an isolated RGBA source has only been trimmed/translated.
+
+    This is NOT a gold-fidelity judgement for flat screenshots, masks, AI
+    reconstructions, or vector redraws. No resizing, blur, alpha thresholding,
+    or deleted visible pixels is allowed in this narrowly declared mode.
+    """
+    with Image.open(source_path) as src, Image.open(cutout_path) as dst:
+        src_rgba = src.convert("RGBA")
+        dst_rgba = dst.convert("RGBA")
+    s_alpha = src_rgba.getchannel("A")
+    d_alpha = dst_rgba.getchannel("A")
+    if s_alpha.getextrema()[0] == 255:
+        raise ValueError("lossless source must be an isolated transparent RGBA layer, not an opaque screenshot")
+    a = s_alpha.getbbox()
+    b = d_alpha.getbbox()
+    if a is None or b is None:
+        raise ValueError("lossless source/cutout has no visible content")
+    source_crop = src_rgba.crop(a)
+    target_crop = dst_rgba.crop(b)
+    if source_crop.size != target_crop.size:
+        return {"pass": False, "reason": "visible glyph shape dimensions changed; cropped, shrunk, scaled or fragmented",
+                "source_visible_size": list(source_crop.size), "output_visible_size": list(target_crop.size)}
+    differing = 0
+    for before, after in zip(source_crop.getdata(), target_crop.getdata()):
+        if before[3] != after[3] or (before[3] > 0 and before[:3] != after[:3]):
+            differing += 1
+    return {"pass": differing == 0,
+            "reason": "exact visible RGBA mismatch; content may have been blurred, recolored or partially erased" if differing else "exact visible RGBA preserved",
+            "source_visible_size": list(source_crop.size),
+            "output_visible_size": list(target_crop.size),
+            "different_visible_pixels": differing}
+
+
 def check(root, plan):
     if not isinstance(plan, dict) or plan.get("schema_version") != "1.0":
         raise ValueError("unsupported cutout plan schema_version")
@@ -96,6 +130,17 @@ def check(root, plan):
             errors.append("original native pixels insufficient for CSS size at DPR; upscaling cannot restore detail")
         if ratio_file < 1:
             errors.append("exported PNG pixels insufficient for requested display DPR")
+        integrity_mode = a.get("integrity_mode", "not_claimed")
+        integrity = None
+        if integrity_mode not in ("not_claimed", "lossless_isolated_layer"):
+            raise ValueError("unsupported integrity_mode")
+        if integrity_mode == "lossless_isolated_layer":
+            if source_kind != "layer_export":
+                raise ValueError("lossless_isolated_layer requires source_kind layer_export")
+            source_path = safe_file(root, a.get("source_layer_path"), "source_layer_path")
+            integrity = verify_lossless_isolated_layer(source_path, fp)
+            if not integrity["pass"]:
+                errors.append("lossless isolated icon integrity failed: " + integrity["reason"])
         if alignment == "tight":
             skew_limit = max(2, math.ceil(min(canvas) * 0.04))
             if abs(info["margins_ltrb"][0] - info["margins_ltrb"][2]) > skew_limit or abs(info["margins_ltrb"][1] - info["margins_ltrb"][3]) > skew_limit:
@@ -111,6 +156,9 @@ def check(root, plan):
             "source_kind": source_kind, "alignment_mode": alignment,
             "target_css_px": target, "target_dpr": dpr, "required_raster_px": required,
             "source_native_px_declared": native,
+            "integrity_mode": integrity_mode,
+            "source_layer_path": a.get("source_layer_path") if integrity_mode == "lossless_isolated_layer" else None,
+            "lossless_integrity": integrity,
             "min_native_pixel_ratio": round(ratio_native, 3),
             "min_export_pixel_ratio": round(ratio_file, 3),
             "composite_preview": preview,
@@ -137,7 +185,9 @@ def check(root, plan):
             "notes": [
                 "source_native_px is a provenance claim, not independently provable from PNG alone; verify source PSD/vector evidence.",
                 "PASS checks numeric geometry and membership only; it does not certify complete 3D geometry, alpha fringe or sharpness.",
-                "A plinth-only PNG is not a complete business icon unless a companion glyph and composite proof are supplied."
+                "A plinth-only PNG is not a complete business icon unless a companion glyph and composite proof are supplied.",
+                "Lossless isolated-layer integrity (when opted in) proves visible RGBA pixel conservation only; it cannot diagnose blurry originals or reconstruction fidelity.",
+                "For flattened screenshot cutouts, verify source ROI and candidate shape manually; no alpha/bbox test can certify completeness."
             ]}
 
 
