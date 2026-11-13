@@ -27,6 +27,8 @@
 - [V3.0 迁移说明](docs/V3.0_MIGRATION.md)：旧约束保留、文件映射与验证事项。
 - [原 V1.0 公约留档](docs/archive/UI_DESIGN_CONVENTION_V1.0.md)：保留全文备查。
 
+**独立图标质量及回退门禁**：图标切出后发虚/少笔画，首先区分资源管理器缩略图插值与PNG文件本身缺失；有清楚的原源图标应保留复用，不从低清截图二次切出。详见[图标原生源、完整形体与锐度验收](docs/ICON_ASSET_ALIGNMENT.md)，对于真独立RGBA源图层可用[无损可见像素检查](scripts/audit_cutout_source_quality.py)阻断二次模糊/裁断/变色；无源层仍须逐图金样人工验收。**000只提升通用规则/工具，具体系统图标修复归负责该页面的设计师。**
+
 ## PNG 图标裁边与居中验收
 
 用户反馈导出的 `assets/icons` PNG **仍有冗余空白、主体偏心、大小不统一或黑色底块残留**时，优先读取 [图标紧裁、背景分离与居中规范](docs/ICON_ASSET_ALIGNMENT.md)，使用 [不覆盖源图的批量检查/紧裁工具](scripts/normalize_ui_icons.py) 对**实际原PNG**逐个检查和归一化，再运行 [完整切图包验证器](scripts/verify_ui_delivery.py)；最后还要与用户认可视觉金样进行人工逐图标/浏览器对照，不能将“Alpha/像素框合格”说成高保真完成。
