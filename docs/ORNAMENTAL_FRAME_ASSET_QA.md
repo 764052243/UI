@@ -1,4 +1,4 @@
-# UI000｜纯装饰边框PNG、独立图标PNG与HTML复合验收 V1.1
+# UI000｜纯边框、独立图标与面板光影分层验收 V1.2
 
 > **适用范围**：001系统后台/门户/登录组件、002可视化大屏中，设计原图存在渐变明暗、切角、金属反光、局部发光、内外多条线、上框与左右边连成一体的**视觉装饰边框**。这是跨案例通用的「装饰边框图层」资产策略，**不是要求所有普通边框都切PNG**。
 >
@@ -32,12 +32,29 @@
 - `frame_inner_rect`为旧版透明内区检查辅助，**不能当作允许在它外部填充面板背景的借口**。新版额外要求`frame_perimeter_px`定义框线/柔光占用的狭窄周边带，带以内的中央范围真实Alpha=0；带宽不能事后扩大来包住图标或背景，实际边框与光影宽度仍由金样确定。
 - 不应用普通前景icon的紧裁/内容居中工具对完整框进行二次裁剪、移动；它使用**原面板尺寸和空间锚点**。整个边框属于完整视觉单元，不是四根无关联的线条。
 
+## FBG2.1｜“纯边框”不能误执行成“删除面板原有光影”
+
+**通用缺口**：除了边框外，已认可面板还可能包含标题金属反光、渐层高光、内阴影、面内软辉光、实体暗部过渡。若为满足边框PNG零背景与窄周边带规则，直接删除这些非周边亮暗信息，而不是归入正确的独立视觉层，最终HTML会变得平、暗、光影不明显。
+
+| 视觉职责 | 资产归属 | 约束 |
+| --- | --- | --- |
+| 描边、切角、紧贴边缘的亮线/暗线/窄辉光 | **纯边框PNG** `frame_*.png` | 不含背景色、图标或宽范围内容区光影 |
+| 标题条金属反光、宽于边框的受光、面内漫射光、阴影层次 | **独立材质/光效层**：简单可等价用CSS，复杂则独立透明PNG `assets/components/effect_*.png` | 既不是边框，也不是背景底色；不含图标、文本、实心色块，记录原始Alpha/柔化程度与层锚点 |
+| 基础底色、普通渐变/纹理 | CSS背景或独立背景 | 不混入纯边框 |
+| 标题/状态/操作图标 | 独立`assets/icons/icon_*.png` | 绝不嵌入边框或材质层 |
+| 数字、文本、表格与动态数据 | DOM/图表层 | 不预先烘焙到装饰PNG |
+
+**前两轮规则同时有效**：保持“纯边框+独立图标PNG”，同时必须**完整保留原图的材质/光影表现**。既不能把光影全部塞回边框，也不能为“干净分层”把光影删除。不能用整页亮度提升、通用霓虹CSS阴影去伪造原稿独特高光。
+
 ## FBG3｜固定尺寸、可变尺寸的PNG装配策略
 
-**固定尺寸、形体独特（默认）**：导出完整框PNG，按原稿面板的同一矩形定位，不改变宽高比。常规层次为：**底色/底纹（CSS或独立背景层）→纯边框PNG（只有周边Alpha像素）→独立图标PNG和标题/数字/图表/交互（DOM、SVG/Canvas）**。框层不吃点击事件，不得把图标和框合成同一个PNG。
+**固定尺寸、形体独特（默认）**：导出完整框PNG，按原稿面板的同一矩形定位，不改变宽高比。常规层次按金样实际层叠关系为：**底色/背景→材质与非边缘光影层（必要时独立effect PNG）→纯边框PNG→独立图标PNG和标题/数字/图表/交互（DOM、SVG/Canvas）**。可能存在光效覆盖于框上方的情况，按原稿实际遮挡关系调整z-index，不能机械套一套层次；框与光效装饰层均不得吃点击事件。
 
 ```html
 <section class="panel">
+  <!-- 仅在有复杂面内光影时输出独立effect PNG，无则删除这一行 -->
+  <img class="panel-effect" src="assets/components/effect_metrics.png"
+       alt="" aria-hidden="true">
   <img class="panel-frame" src="assets/components/frame_metrics.png"
        alt="" aria-hidden="true">
   <header class="panel-title"><img class="panel-icon" src="assets/icons/icon_panel_metrics.png" alt="" aria-hidden="true">实时指标</header>
@@ -52,11 +69,19 @@
   width: 100%; height: 100%;
   pointer-events: none; z-index: 1;
 }
-.panel-title, .panel-content { position: relative; z-index: 2; }
+.panel-effect {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 1; pointer-events: none; z-index: 1;
+  /* 未经原稿证据，不擅自叠加mix-blend-mode/filter/额外透明度 */
+}
+.panel-frame { z-index: 2; }
+.panel-title, .panel-content { position: relative; z-index: 3; }
 .panel-icon { display: inline-block; width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: 8px; }
 /* icon_panel_metrics.png与frame_metrics.png必须是两个真实且不同的PNG */
 /* 本类复杂边框不要另外叠加 border: 1px solid... */
 ```
+
+上述`effect_metrics.png`只是复杂材质光影分层的示例：存在才作为独立`role=component`透明PNG登记并实际引用；不存在时删除该图层，不得留下404。层级和属性依据认可原稿，不是统一的默认美术配置。
 
 上述`width:100%;height:100%`仅适用于**导出框与目标面板宽高比和原稿一致**的情形；若设计允许响应式高度/宽度变化而出现失真，需重新导出适配尺寸，或采用经验证的9-slice。
 
@@ -115,7 +140,38 @@
 5. 审查复用和尺寸策略：固定框不拉伸错比例；9-slice各尺寸检查左右/顶部与角部高光接缝，边缘是否完整；宽度/高度改变后的结果仍需对照相应认可基线。
 6. 若源图只有合成位图且仍有背景分离误差，应标记“框图层尚未高保真提取/重建”，而不是隐藏问题用CSS实线替代。
 
-## FBG6｜通用回归（FBR-01～FBR-15）
+## FBG5.1｜细微光影的局部亮度保留与复合验收
+
+1. 同时保留**独立、无叠窗/红箭头的认可原生设计图**与**真实浏览器同视口同DPR截图**。窗口里缩小的对比图只能定位问题，不能直接做同坐标像素验收。
+2. 在修改前针对每个关键**高光带、暗边、标题反光、柔性阴影**固定窄ROI，排除动态文字、图表、数据、图标等干扰。**整卡或全屏RGB均值不代表少量高光细节保留。**
+3. 用[原图ROI对照器](../scripts/verify_visual_reconstruction.py)的可选`light_preservation`：从参考ROI中事先按亮度阈值筛选原高光像素，检查HTML同位置的**平均亮度保留比例**与**变暗像素比例**。如果参考ROI没有足够的高光像素就FAIL，不允许降低门槛冒充检测成功。
+4. **这只是亮度诊断**。色相、光晕扩散宽度、形状、模糊、位移、HDR材质还需RGB/轮廓差异、`GOLD/HTML/DIFF`和100%/400%人工检查。不能只凭亮度指标自称1:1。
+5. 若实际丢光，检查资源导出Alpha与RGB污染、裁边、CSS `opacity/filter/mix-blend-mode/mask`、父元素透明度、`overflow:hidden`、层级与缩放/插值；找到真实根因才修改，不凭经验统一加亮。
+
+配置示意（**纯合成格式示例，不是本轮用户图稿的真实坐标或阈值**），作为`verify_visual_reconstruction.py`原有`regions[]`中的一个对象：
+
+```json
+{
+  "id": "critical-panel-highlight",
+  "box": [10, 10, 110, 30],
+  "thresholds": {
+    "max_changed_fraction": 0.35,
+    "max_mean_rgb_difference": 15,
+    "pixel_tolerance": 3,
+    "light_preservation": {
+      "reference_min_luminance": 100,
+      "min_reference_highlight_pixels": 20,
+      "min_preserved_luminance_ratio": 0.92,
+      "max_lost_highlight_fraction": 0.20,
+      "drop_tolerance": 6
+    }
+  }
+}
+```
+
+此字段为**可选增强**，老配置依然兼容。新任务要在实际原图和修改前状态上锁定ROI/阈值，配合其它色彩与位置检查，不能事后放宽。
+
+## FBG6｜通用回归（FBR-01～FBR-20）
 
 | 编号 | 必须发现 |
 | --- | --- |
@@ -134,5 +190,10 @@
 | FBR-13 | 单独图标文件不存在，或被声明成component/与边框共用PNG：资产角色FAIL |
 | FBR-14 | 将frame_perimeter_px扩大以藏住背景/图标：宽度门禁FAIL |
 | FBR-15 | 看似两张PNG但实际HTML只引用边框或仅截图呈现图标：资源引用与浏览器验收FAIL |
+| FBR-16 | 纯框结构通过却把原稿标题区金属反光/大范围软光删除：视觉FAIL |
+| FBR-17 | HTML额外opacity、filter、blend或遮罩导致光影变暗：复合截图局部亮度FAIL |
+| FBR-18 | 整页RGB平均合格但局部高光明显减弱：独立高光ROI亮度保留FAIL |
+| FBR-19 | 用整页加亮/统一box-shadow替代原稿局部材质：非目标冻结与原图差异FAIL |
+| FBR-20 | 独立effect层虽存在但Alpha、空间位置、光晕过渡、层级与原稿不符：复合FAIL |
 
 **责任与状态**：000负责通用门禁与可执行检查器，001/002负责本项目真实边框素材、源HTML/实际截图和最终用户验收。新增公共规范不能宣称原来错用CSS边框的页面已经被实际修复。

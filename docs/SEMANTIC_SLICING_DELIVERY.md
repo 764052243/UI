@@ -55,7 +55,7 @@
 
 - `background_strategy: "css"`：CSS实际绘制简单底色/渐变，不需要任何背景 PNG；若偷偷保留冗余PNG，资源目录检查会失败。
 - `background_strategy: "image"`：只有不可替代图像背景或用户明确要求背景PNG时使用；此时必须交全画布、无透明洞的真正背景PNG。需要PNG但纯色背景的情况，应在`required_asset_roles`中记录用户明确的背景要求。
-- **整体装饰面板框专用**：复杂渐变明暗、切角、四边连贯的完整面板框不是CSS普通`border`。在1.1清单的`required_frame_asset_ids`登记确需PNG的每个面板框ID；对应资源填写`role:component`、`component_type:ornamental_frame`、`frame_inner_rect:[x0,y0,x1,y1]`、`frame_render_strategy:fixed_overlay|nine_slice`。9-slice需补`frame_slice_px:[top,right,bottom,left]`。边框PNG只能保留四周完整边线、切角与光晕，**不可带任何面板背景色、顶部背景条或图标**。必须额外填写`frame_perimeter_px`（非周边透明）和`frame_icon_asset_ids`（关联的独立图标ID，若无则`[]`），图标逐一声明`role:icon`并输出不同的透明PNG；内容背景由CSS或独立背景负责，文字图表由DOM负责。详见[FBG0～FBG6纯边框与图标分离验收](ORNAMENTAL_FRAME_ASSET_QA.md)。
+- **整体装饰面板框专用**：复杂渐变明暗、切角、四边连贯的完整面板框不是CSS普通`border`。在1.1清单的`required_frame_asset_ids`登记确需PNG的每个面板框ID；对应资源填写`role:component`、`component_type:ornamental_frame`、`frame_inner_rect:[x0,y0,x1,y1]`、`frame_render_strategy:fixed_overlay|nine_slice`。9-slice需补`frame_slice_px:[top,right,bottom,left]`。边框PNG只能保留四周完整边线、切角与光晕，**不可带任何面板背景色、顶部背景条或图标**。必须额外填写`frame_perimeter_px`（非周边透明）和`frame_icon_asset_ids`（关联的独立图标ID，若无则`[]`），图标逐一声明`role:icon`并输出不同的透明PNG；内容背景由CSS或独立背景负责，文字图表由DOM负责。**若认可原图还存在超出纯边框的复杂标题反光/大范围材质光效，应另交可复合的独立透明`assets/components/effect_*.png`（或等价CSS），并用真实浏览器局部光效ROI检查，不能为了纯框和图标分离将其删除**。详见[FBG0～FBG6纯边框与图标分离验收](ORNAMENTAL_FRAME_ASSET_QA.md)。
 - `source_kind`：每张PNG记录`layer_export / masked / reconstructed`；背景若仅从合成截图蒙版抠取不能直接签收；仍需源层或高保真重建与人工核对。
 - `reason_png`：每张PNG需要具体说明为什么不能稳定用DOM/CSS复现；不能按素材数量交差。复杂组件还需`edge_policy: "closed"`或有金样依据的`"intentional_bleed"`。
 - 需要交PNG背景的用户明确要求应写进`required_asset_roles: ["background"]`，不得因为CSS方案方便而遗漏。
