@@ -247,4 +247,4 @@ python scripts/verify_ui_delivery.py delivery --zip delivery.zip
 - **FBG5 两层校验**：执行[scripts/verify_ui_delivery.py](../../scripts/verify_ui_delivery.py)先阻断缺框PNG/未引用/内区或非周边染色/四边四角缺失/关联图标未独立成PNG/错误九宫参数，再对照透明棋盘检查**框PNG只有纯边框、图标PNG只有独立图标**，最后在真实HTML原视口截图逐面板比较完整边框与图标的原位复合。工具通过不能证明形体、颜色、材质已1:1。
 - **FBG6 交付**：保留可编辑原框源、完整PNG、manifest、HTML/CSS/JS、浏览器复合截图及ZIP，明确框PNG在何处被引用；若缺源层导致仍无法精确分离，标为尚未高保真还原，不能把HTML`border`替代当作解决。
 
-完整通用规范、示例HTML和FBR-01～FBR-10回归见[装饰面板框整体PNG与HTML叠层验收](../../docs/ORNAMENTAL_FRAME_ASSET_QA.md)。**已确认设计只修改边框实现，不顺便改面板内容、颜色、尺寸、地图或其它无关组件。**
+完整通用规范、示例HTML和FBR-01～FBR-15回归见[装饰面板框整体PNG与HTML叠层验收](../../docs/ORNAMENTAL_FRAME_ASSET_QA.md)。**已确认设计只修改边框实现，不顺便改面板内容、颜色、尺寸、地图或其它无关组件。**
