@@ -244,7 +244,7 @@ python scripts/verify_ui_delivery.py delivery --zip delivery.zip
 - **FBG2 保真边框PNG：纯框、零背景、零图标；原有光影不许丢**。一份`assets/components/frame_*.png`只表示**完整外圈边线、拐角及其真实光晕**，窄边带以外的Alpha必须为0；不能包含面板底色、顶部实心背景、半透明内部底纹、任何标题/导航/箭头图标、数据或文字。**与面板关联的每个图标另切独立透明`assets/icons/icon_*.png`**，以HTML原位叠加，二者不能混到同一PNG；四侧四角与原稿暗亮结构均须完整。
 - **FBG3 HTML正确装配及独立材质层**：底色/背景层在下，**原稿若存在超出边框窄周边的标题反光、面内金属渐层、光影晕散或内阴影，不得因边框“纯透明”而删除**，应以可等价CSS或独立透明`assets/components/effect_*.png`材质光效层重现，再叠完整PNG框、独立icon PNG，真实DOM文字/图表和交互在上；按原图调整层次，装饰层`pointer-events:none`，禁止再加CSS实线描边造成“双边框”。固定尺寸按原稿原比例展示；尺寸可变时，只有允许切分的框才使用PNG`border-image`/9-slice（**依然是PNG绘制，不是单色CSS border**），验证边沿亮暗接缝和四角不拉伸。
 - **FBG4 manifest新增字段**：采用`schema_version=1.1`，用户明确需要的框ID列入`required_frame_asset_ids`。对应组件必须有`component_type=ornamental_frame`、`frame_inner_rect=[left,top,right,bottom]`、`frame_perimeter_px`（限制有效Alpha只在窄周边带）、`frame_icon_asset_ids`（与边框独立的图标ID清单，零图标用`[]`）、`frame_render_strategy=fixed_overlay|nine_slice`；九宫格还需`frame_slice_px=[top,right,bottom,left]`。每个关联图标都必须以`role=icon`独立PNG声明与实际引用，现有`source_kind/reason_png/edge_policy`继续执行。
-- **FBG5 两层校验**：执行[scripts/verify_ui_delivery.py](../../scripts/verify_ui_delivery.py)先阻断缺框PNG/未引用/内区或非周边染色/四边四角缺失/关联图标未独立成PNG/错误九宫参数，再对照透明棋盘检查**框PNG只有纯边框、图标PNG只有独立图标**，最后在真实HTML原视口截图逐面板比较完整边框与图标的原位复合。工具通过不能证明形体、颜色、材质已1:1。
+- **FBG5 两层校验＋局部光影强度**：执行[scripts/verify_ui_delivery.py](../../scripts/verify_ui_delivery.py)先阻断缺框PNG/未引用/内区或非周边染色/四边四角缺失/关联图标未独立成PNG/错误九宫参数，再对照透明棋盘检查**框PNG只有纯边框、图标PNG只有独立图标**，最后在真实HTML原视口截图逐面板比较完整边框与图标的原位复合。工具通过不能证明形体、颜色、材质已1:1。
 - **FBG6 交付**：保留可编辑原框源、完整PNG、manifest、HTML/CSS/JS、浏览器复合截图及ZIP，明确框PNG在何处被引用；若缺源层导致仍无法精确分离，标为尚未高保真还原，不能把HTML`border`替代当作解决。
 
 完整通用规范、示例HTML和FBR-01～FBR-15回归见[装饰面板框整体PNG与HTML叠层验收](../../docs/ORNAMENTAL_FRAME_ASSET_QA.md)。**已确认设计只修改边框实现，不顺便改面板内容、颜色、尺寸、地图或其它无关组件。**
