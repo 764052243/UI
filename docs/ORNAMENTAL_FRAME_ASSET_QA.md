@@ -1,4 +1,4 @@
-# UI000｜装饰面板整体边框PNG资产与HTML复合验收 V1.0
+# UI000｜纯装饰边框PNG、独立图标PNG与HTML复合验收 V1.1
 
 > **适用范围**：001系统后台/门户/登录组件、002可视化大屏中，设计原图存在渐变明暗、切角、金属反光、局部发光、内外多条线、上框与左右边连成一体的**视觉装饰边框**。这是跨案例通用的「装饰边框图层」资产策略，**不是要求所有普通边框都切PNG**。
 >
@@ -26,20 +26,21 @@
 ## FBG2｜独立PNG的真实内容
 
 - 推荐`assets/components/frame_*.png`，其`component_type`是`ornamental_frame`，不是`icon`或全屏`background`。
-- 中部数据/文本容纳区**真正透明**，不应混进黑色矩形、图表、文字、可交互内容。可以包含原稿的顶部装饰线、金属标题条、高光和柔光，但具体文字属于DOM。
+- **纯边框不是“带底色的空心面板”**：整张框PNG除了四周狭窄的描边、切角及其必要高光/羽化阴影外，**其他像素Alpha必须为0**。不得包含黑色/灰色面板背景、顶部实心标题背景、半透明内区底纹、图表/文字、任何独立图标（包括标题前的装饰符号和右侧按钮图标）。简单的内部规则分割线如需要，单独归CSS/图层，不属于纯边框PNG。边框光影可以有真实暗色像素，但不等于允许做黑色底板。
+- **图标必须与边框拆成不同PNG**：每个业务/装饰/按钮图标以`assets/icons/icon_*.png`单独导出，真正透明并符合I0～I5；一张`frame_*.png`不得把图标、文字或数据烘焙进去。界面中存在几个需要图标PNG的对象，就各自建立独立图标资源映射；同一图标可跨同型面板复用。
 - 有背板填充时，简单底色/渐变由下层CSS绘制；复杂独有纹理由独立背景组件提供。不能为了制造透明孔一刀切所有黑色——可能毁掉原本暗色边沿与原生阴影。
-- `frame_inner_rect`标出**应该可透视的内部内容安全区**，范围不应为了通过测试缩到很小。装饰光效向内延伸的部分要依据原金样精确调整该安全区。
+- `frame_inner_rect`为旧版透明内区检查辅助，**不能当作允许在它外部填充面板背景的借口**。新版额外要求`frame_perimeter_px`定义框线/柔光占用的狭窄周边带，带以内的中央范围真实Alpha=0；带宽不能事后扩大来包住图标或背景，实际边框与光影宽度仍由金样确定。
 - 不应用普通前景icon的紧裁/内容居中工具对完整框进行二次裁剪、移动；它使用**原面板尺寸和空间锚点**。整个边框属于完整视觉单元，不是四根无关联的线条。
 
 ## FBG3｜固定尺寸、可变尺寸的PNG装配策略
 
-**固定尺寸、形体独特（默认）**：导出完整框PNG，按原稿面板的同一矩形定位，不改变宽高比。常规层次为：底色/底纹（CSS或背景层）→完整框PNG（绝对定位、纯装饰）→标题/数字/图表/交互（DOM、SVG/Canvas）。框层不吃点击事件，内部DOM不能被框PNG覆盖。
+**固定尺寸、形体独特（默认）**：导出完整框PNG，按原稿面板的同一矩形定位，不改变宽高比。常规层次为：**底色/底纹（CSS或独立背景层）→纯边框PNG（只有周边Alpha像素）→独立图标PNG和标题/数字/图表/交互（DOM、SVG/Canvas）**。框层不吃点击事件，不得把图标和框合成同一个PNG。
 
 ```html
 <section class="panel">
   <img class="panel-frame" src="assets/components/frame_metrics.png"
        alt="" aria-hidden="true">
-  <header class="panel-title">实时指标</header>
+  <header class="panel-title"><img class="panel-icon" src="assets/icons/icon_panel_metrics.png" alt="" aria-hidden="true">实时指标</header>
   <div class="panel-content"><!-- 真正的DOM或可交互图表 --></div>
 </section>
 ```
@@ -52,6 +53,8 @@
   pointer-events: none; z-index: 1;
 }
 .panel-title, .panel-content { position: relative; z-index: 2; }
+.panel-icon { display: inline-block; width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: 8px; }
+/* icon_panel_metrics.png与frame_metrics.png必须是两个真实且不同的PNG */
 /* 本类复杂边框不要另外叠加 border: 1px solid... */
 ```
 
@@ -78,7 +81,16 @@
       "reason_png": "Unique continuous metallic bevel and light-to-dark perimeter",
       "edge_policy": "closed",
       "frame_render_strategy": "fixed_overlay",
-      "frame_inner_rect": [12, 36, 620, 340]
+      "frame_inner_rect": [20, 24, 600, 315],
+      "frame_perimeter_px": 18,
+      "frame_icon_asset_ids": ["panel-metrics-icon"]
+    },
+    {
+      "id": "panel-metrics-icon",
+      "role": "icon",
+      "path": "assets/icons/icon_panel_metrics.png",
+      "source_kind": "layer_export",
+      "reason_png": "separate decorative title glyph with transparent surrounding pixels"
     }
   ]
 }
@@ -87,10 +99,12 @@
 这段是**字段片段**，而非完整交付manifest。真实交付还必须包含`canvas/entry_html/css/js/preview/required_text/required_interactions`等字段。坐标均为示例，不是用户当前图稿实测。
 
 - `required_frame_asset_ids`：该任务明确需要的框资产ID清单。逐个必须存在真实PNG，并声明`role=component`、`component_type=ornamental_frame`；不可只在CSS里写border后删除必需项。**具体多少块面板**由001/002从本次用户认可图稿建立清单，不在公共SKILL写死。
-- `frame_inner_rect`：PNG内部内容安全区`[left,top,right,bottom]`，要求足够大且大多数像素透明，阻断把含完整背景/文字的截图当作空心边框。
+- `frame_inner_rect`：PNG内部内容安全区`[left,top,right,bottom]`，要求**完全透明**；不能把画满色块的外圈包在内区之外作为合法背景。
+- `frame_perimeter_px`：**必填正整数**，定义整个PNG允许有可见像素的**窄周边带**；带内部区域Alpha必须为零。宽度不大于图像较短边的1/5，阻断以扩大边框带的方式藏进整块背景或内部图标。原图有效外发光跨越该带时应另拆光晕层或采用源设计适配方案并记录差异，不得通过加大阈值冒充“纯边框”。
+- `frame_icon_asset_ids`：**必填数组**，把与此框关联的所有独立图标PNG的manifest ID写进去；即使此框原图没有图标，也要明确写`[]`。检查器要求这些ID存在，且属于`role=icon`的**不同PNG文件**。视觉上是否仍把小图案画进周边框带，最终还必须人工以原图检查。
 - `frame_render_strategy`：`fixed_overlay`或`nine_slice`；选`nine_slice`时必填`frame_slice_px: [top,right,bottom,left]`，值必须对应实际切片。静态检查仅验证合法参数，**不能证明切片后光影不变**。
 - `edge_policy`遵循已有完整组件规则；框有意延伸到资产画布边缘才可使用`intentional_bleed`，应有金样依据。
-- [完整交付检查器](../scripts/verify_ui_delivery.py)已识别上述声明，检查**必需资产存在、HTML/CSS真正引用、透明内区、四边和四角可见像素、切片参数、常规组件裁断风险**。全部检测为保守结构检查，不能自动证明原图装饰线条、精细材质与HTML渲染视觉一致。
+- [完整交付检查器](../scripts/verify_ui_delivery.py)已识别上述声明，检查**必需资产存在、HTML/CSS真正引用、窄周边以外完全透明、框与图标分属不同PNG、四边和四角可见像素、切片参数及普通组件裁断风险**。全部检测为保守结构检查，不能自动证明原图装饰线条、精细材质与HTML渲染视觉一致。
 
 ## FBG5｜最重要的实际视觉回归
 
@@ -115,5 +129,10 @@
 | FBR-08 | CSS框与PNG框重叠造成双边、或CSS缩放使高光变形：实际HTML差分FAIL |
 | FBR-09 | 为让边框通过而把内容区ROI缩小到几像素：最小面积约束FAIL |
 | FBR-10 | 自动工具通过但框仍与原稿暗亮比例/材质不同：人工与原图ROI仍未通过 |
+| FBR-11 | 边框PNG包含面板黑底、顶部色带、透明内区污染：非周边Alpha必须为0，FAIL |
+| FBR-12 | 将标题图标、按钮箭头、业务符号烘焙进边框PNG：语义分层FAIL，图标必须独立PNG |
+| FBR-13 | 单独图标文件不存在，或被声明成component/与边框共用PNG：资产角色FAIL |
+| FBR-14 | 将frame_perimeter_px扩大以藏住背景/图标：宽度门禁FAIL |
+| FBR-15 | 看似两张PNG但实际HTML只引用边框或仅截图呈现图标：资源引用与浏览器验收FAIL |
 
 **责任与状态**：000负责通用门禁与可执行检查器，001/002负责本项目真实边框素材、源HTML/实际截图和最终用户验收。新增公共规范不能宣称原来错用CSS边框的页面已经被实际修复。
