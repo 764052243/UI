@@ -121,11 +121,27 @@ def inspect_ornamental_frame(rgba, asset):
         top, right, bottom, left = cuts
         if top + bottom >= height or left + right >= width:
             raise ValueError("nine_slice corners overlap PNG canvas")
+    # Independent from the declared inner rect: the whole center outside a
+    # narrow perimeter must have exactly zero alpha. This prevents a manifest
+    # from hiding baked header fills/icons by shrinking frame_inner_rect.
+    band = asset.get("frame_perimeter_px")
+    if type(band) is not int or not (1 <= band <= max(1, min(width, height) // 5)):
+        raise ValueError("ornamental_frame requires narrow frame_perimeter_px within canvas limits")
+    icon_ids = asset.get("frame_icon_asset_ids")
+    if (not isinstance(icon_ids, list) or
+            any(not isinstance(x, str) or not x.strip() for x in icon_ids) or
+            len(icon_ids) != len(set(icon_ids))):
+        raise ValueError("ornamental_frame requires unique frame_icon_asset_ids list (empty if no icons)")
     channel = rgba.getchannel("A")
     central = channel.crop((x0, y0, x1, y1))
     hist = central.histogram()
-    nontransparent = sum(hist[17:])
+    nontransparent = sum(hist[1:])
     center_fraction = nontransparent / ((x1 - x0) * (y1 - y0))
+    safe_rect = (band, band, width - band, height - band)
+    if safe_rect[0] >= safe_rect[2] or safe_rect[1] >= safe_rect[3]:
+        raise ValueError("ornamental_frame perimeter consumes full canvas")
+    interior_alpha = channel.crop(safe_rect)
+    interior_pixels = sum(interior_alpha.histogram()[1:])
     regions = {
         "top": (x0, 0, x1, y0),
         "bottom": (x0, y1, x1, height),
@@ -139,12 +155,15 @@ def inspect_ornamental_frame(rgba, asset):
     sides = {}
     for name, rect in regions.items():
         alpha_hist = channel.crop(rect).histogram()
-        sides[name] = sum(alpha_hist[17:])
+        sides[name] = sum(alpha_hist[1:])
     return {
-        "frame_inner_rect": bounds, "frame_render_strategy": strategy,
+        "frame_inner_rect": bounds, "frame_perimeter_px": band,
+        "frame_icon_asset_ids": icon_ids,
+        "frame_render_strategy": strategy,
         "inner_visible_alpha_fraction": round(center_fraction, 6),
+        "nonperimeter_visible_alpha_pixels": interior_pixels,
         "edge_and_corner_alpha_pixels": sides,
-        "has_transparent_content_area": center_fraction <= 0.05,
+        "has_transparent_content_area": nontransparent == 0 and interior_pixels == 0,
         "all_sides_and_corners_present": all(v > 0 for v in sides.values())
     }
 
@@ -250,6 +269,7 @@ def scan(root, zip_path=None):
             if role not in ("background", "icon", "component"):
                 errors.append("assets[%d] has unknown role" % i)
                 continue
+
             if not isinstance(aid, str) or not aid.strip() or aid in asset_ids:
                 errors.append("assets[%d] has missing/duplicate id" % i)
                 continue
@@ -321,7 +341,7 @@ def scan(root, zip_path=None):
                                     frame_report = inspect_ornamental_frame(rgba, asset)
                                     report.setdefault("ornamental_frames", {})[p] = frame_report
                                     if not frame_report["has_transparent_content_area"]:
-                                        errors.append("ornamental_frame has opaque content-area matte: " + p)
+                                        errors.append("ornamental_frame must be pure border without panel background or embedded interior content: " + p)
                                     if not frame_report["all_sides_and_corners_present"]:
                                         errors.append("ornamental_frame is missing frame edge or corner: " + p)
                                     delivered_frame_ids.add(aid)
@@ -383,6 +403,25 @@ def scan(root, zip_path=None):
                 report["assets_checked"] += 1
             except ValueError as exc:
                 errors.append(str(exc))
+        # All linked decorative symbols must be separate PNGs with icon role.
+        # This is an asset-identity check, not proof that the frame pixels
+        # contain no symbolic motif in the narrow border; visual review stays
+        # mandatory for this distinction.
+        by_id = {
+            asset.get("id"): asset for asset in assets if isinstance(asset, dict)
+            and isinstance(asset.get("id"), str)
+        }
+        if strict_roles:
+            for asset in assets:
+                if not isinstance(asset, dict) or asset.get("component_type") != "ornamental_frame":
+                    continue
+                for icon_id in asset.get("frame_icon_asset_ids", []):
+                    icon = by_id.get(icon_id)
+                    if icon is None or icon.get("role") != "icon":
+                        errors.append("frame-linked icon must be independently declared as role=icon: " +
+                                      str(asset.get("id")) + " -> " + str(icon_id))
+                    elif icon.get("path") == asset.get("path"):
+                        errors.append("frame-linked icon PNG must be separate from frame PNG: " + str(icon_id))
         # A file sitting in assets/icons is still a deliverable: do not skip
         # checks by omitting it from the manifest or relabelling it as component.
         icon_folder = root / "assets" / "icons"
