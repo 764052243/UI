@@ -285,7 +285,9 @@ class SemanticDeliveryTests(unittest.TestCase):
             "reason_png": "nonuniform illuminated segmented panel outline and cut corners",
             "edge_policy": "closed",
             "frame_render_strategy": "fixed_overlay",
-            "frame_inner_rect": [8, 9, 56, 39]
+            "frame_inner_rect": [8, 9, 56, 39],
+            "frame_perimeter_px": 8,
+            "frame_icon_asset_ids": ["nav"]
         })
         self.manifest["required_frame_asset_ids"] = ["panel-frame"]
         self.write_manifest()
@@ -298,6 +300,87 @@ class SemanticDeliveryTests(unittest.TestCase):
         self.assertTrue(frame["all_sides_and_corners_present"])
         self.assertTrue(frame["has_transparent_content_area"])
         self.assertEqual(frame["inner_visible_alpha_fraction"], 0)
+
+    def test_v11_no_perimeter_width_declared_fails(self):
+        self.add_ornamental_frame()
+        self.manifest["assets"][-1].pop("frame_perimeter_px")
+        self.write_manifest()
+        self.assertTrue(any("requires narrow frame_perimeter_px" in e
+                            for e in self.scan()["errors"]))
+
+    def test_v11_perimeter_cannot_be_widened_to_hide_background(self):
+        self.add_ornamental_frame()
+        self.manifest["assets"][-1]["frame_perimeter_px"] = 25
+        self.write_manifest()
+        self.assertTrue(any("requires narrow frame_perimeter_px" in e
+                            for e in self.scan()["errors"]))
+
+    def test_v11_header_colored_fill_is_not_border_png(self):
+        self.add_ornamental_frame()
+        path = self.root / "assets/components/frame.png"
+        with Image.open(path) as img:
+            frame = img.convert("RGBA")
+        for y in range(7, 17):
+            for x in range(10, 54):
+                frame.putpixel((x, y), (8, 20, 28, 255))
+        frame.save(path)
+        self.assertTrue(any("must be pure border without panel background" in e
+                            for e in self.scan()["errors"]))
+
+    def test_v11_dark_panel_backdrop_rejected_as_frame(self):
+        self.add_ornamental_frame()
+        path = self.root / "assets/components/frame.png"
+        with Image.open(path) as img:
+            frame = img.convert("RGBA")
+        for y in range(11, 35):
+            for x in range(12, 52):
+                frame.putpixel((x, y), (3, 12, 19, 20))
+        frame.save(path)
+        self.assertTrue(any("must be pure border without panel background" in e
+                            for e in self.scan()["errors"]))
+
+    def test_v11_icon_baked_in_middle_frame_is_rejected(self):
+        self.add_ornamental_frame()
+        path = self.root / "assets/components/frame.png"
+        with Image.open(path) as img:
+            frame = img.convert("RGBA")
+        for y in range(14, 19):
+            for x in range(17, 23):
+                frame.putpixel((x, y), (250, 145, 18, 255))
+        frame.save(path)
+        self.assertTrue(any("must be pure border without panel background" in e
+                            for e in self.scan()["errors"]))
+
+    def test_v11_frame_icon_asset_list_is_mandatory_even_when_empty(self):
+        self.add_ornamental_frame()
+        self.manifest["assets"][-1].pop("frame_icon_asset_ids")
+        self.write_manifest()
+        self.assertTrue(any("requires unique frame_icon_asset_ids" in e
+                            for e in self.scan()["errors"]))
+
+    def test_v11_frame_linked_icon_must_have_separate_png_and_icon_role(self):
+        self.add_ornamental_frame()
+        self.manifest["assets"][-1]["frame_icon_asset_ids"] = ["unknown-icon"]
+        self.write_manifest()
+        self.assertTrue(any("must be independently declared as role=icon" in e
+                            for e in self.scan()["errors"]))
+        self.manifest["assets"][-1]["frame_icon_asset_ids"] = ["panel-frame"]
+        self.write_manifest()
+        self.assertTrue(any("must be independently declared as role=icon" in e
+                            for e in self.scan()["errors"]))
+
+    def test_v11_frame_without_icons_can_explicitly_declare_empty_list(self):
+        self.add_ornamental_frame()
+        self.manifest["assets"][-1]["frame_icon_asset_ids"] = []
+        self.write_manifest()
+        self.assertEqual(self.scan()["status"], "PASS", self.scan()["errors"])
+
+    def test_v11_frame_icon_ids_cannot_repeat(self):
+        self.add_ornamental_frame()
+        self.manifest["assets"][-1]["frame_icon_asset_ids"] = ["nav", "nav"]
+        self.write_manifest()
+        self.assertTrue(any("requires unique frame_icon_asset_ids" in e
+                            for e in self.scan()["errors"]))
 
     def test_v11_required_frame_missing_from_manifest_fails(self):
         self.enable_v11("css")
@@ -321,7 +404,7 @@ class SemanticDeliveryTests(unittest.TestCase):
             for x in range(12, 52):
                 frame.putpixel((x, y), (1, 10, 15, 255))
         frame.save(path)
-        self.assertTrue(any("opaque content-area matte" in e for e in self.scan()["errors"]))
+        self.assertTrue(any("must be pure border without panel background" in e for e in self.scan()["errors"]))
 
     def test_v11_frame_missing_right_edge_fails(self):
         self.add_ornamental_frame()
