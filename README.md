@@ -24,6 +24,7 @@
 - [即时模式设计回归用例](docs/INSTANT_DESIGN_REGRESSION.md)：12个待实测视觉、数据、交互与交付案例；不得把文档通过当作模型质量通过。
 - [大屏设计 SKILL](skills/big-screen-design/SKILL.md)：数据驾驶舱、指挥中心、数据图表、工业监控。
 - [系统 UI 设计 SKILL](skills/system-ui-design/SKILL.md)：登录、导航、门户、工作台、表单、查询、后台。
+- **设计图聊天内直接预览交付门禁**：用户要求图片/改稿时先用当前聊天可见的图像输出展示最终图，再按需提供下载链接/ZIP，二者不能互相替代；具体执行见[共同设计公约第十章](UI_DESIGN_CONVENTION.md)、[系统 UI SKILL 第11节](skills/system-ui-design/SKILL.md)和[VQ-13～VQ-14回归](docs/INSTANT_DESIGN_REGRESSION.md)。对应 [003 通知 Issue #27](https://github.com/764052243/UI/issues/27)；仓库静态规则通过不等于用户客户端实际已看到图片。
 - [风格参考图目录](assets/style-previews/README.md)：仅存真实且已获授权的样图；暂无图片时不伪造链接。
 - [V3.0 迁移说明](docs/V3.0_MIGRATION.md)：旧约束保留、文件映射与验证事项。
 - [原 V1.0 公约留档](docs/archive/UI_DESIGN_CONVENTION_V1.0.md)：保留全文备查。
