@@ -21,7 +21,7 @@
 - [复杂设计分层方法论](docs/COMPLEX_DESIGN_METHOD.md)：ANCHOR→MAP→LAYOUT→VISUAL→VERIFY 的详细操作方式。
 - [复杂设计回归案例](docs/COMPLEX_DESIGN_REGRESSION.md)：12项高风险场景，用真实设计输出检验，而非静态文档自称效果。
 - [即时模式质量门禁 V1.0](docs/INSTANT_DESIGN_QUALITY_GATE.md)：风险分层、Q0～Q3验收、失败回退；复杂设计、严格还原和交付时按需读取。
-- [即时模式设计回归用例](docs/INSTANT_DESIGN_REGRESSION.md)：12个待实测视觉、数据、交互与交付案例；不得把文档通过当作模型质量通过。
+- [即时模式设计回归用例](docs/INSTANT_DESIGN_REGRESSION.md)：VQ-01～VQ-20共20个待实测用例；VQ-15～20整合003真实反馈的连续短指令、语义反转、局部背景冻结、成对PNG可见主体/镜像、合法柔光、预览同文件回归。**003历史单件像素验证不等于Instant已实测通过**，不另建同义SKILL。
 - [大屏设计 SKILL](skills/big-screen-design/SKILL.md)：数据驾驶舱、指挥中心、数据图表、工业监控。
 - [系统 UI 设计 SKILL](skills/system-ui-design/SKILL.md)：登录、导航、门户、工作台、表单、查询、后台。
 - **设计图聊天内直接预览交付门禁**：用户要求图片/改稿时先用当前聊天可见的图像输出展示最终图，再按需提供下载链接/ZIP，二者不能互相替代；具体执行见[共同设计公约第十章](UI_DESIGN_CONVENTION.md)、[系统 UI SKILL 第11节](skills/system-ui-design/SKILL.md)和[VQ-13～VQ-14回归](docs/INSTANT_DESIGN_REGRESSION.md)。对应 [003 通知 Issue #27](https://github.com/764052243/UI/issues/27)；仓库静态规则通过不等于用户客户端实际已看到图片。
